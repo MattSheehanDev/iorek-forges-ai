@@ -7,6 +7,7 @@ Daily, self-contained demos of new AI papers and of conventions for coding agent
 ## Demos
 
 - [2026-11-02 — Nestor, nested sparsity](demos/2026-11-02-nestor-nested-sparsity/) — Tokens pick a few attention columns, and each column has its own experts. Toy routers, causal masks, and stored-versus-used counters.
+- [2026-10-31 — RAG Retrieval Visualizer](demos/2026-10-31-rag-retrieval-visualizer/) — Chunk a clinic handbook and see which passage BM25 and a hashed embedding return for a help-desk question.
 
 ## New demos
 

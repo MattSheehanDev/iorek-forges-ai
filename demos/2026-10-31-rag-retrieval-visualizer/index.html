@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG Retrieval Visualizer · Iorek Forges</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%233b6a8f' width='32' height='32' rx='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../../assets/theme.css">
+<style>
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 8px 24px 56px; }
+  header.top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin: 8px 0 14px; }
+  .eyebrow { color: var(--accent); font-family: var(--sans); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6px; }
+  h1 { font-size: 2.15rem; line-height: 1.05; margin: 0; }
+  .toy-flag { background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; max-width: 300px; font-size: 0.86rem; }
+  .toy-flag strong { color: #c5d7e6; }
+  .lede { margin: 0 0 18px; }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  aside { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); font-family: var(--sans); }
+  aside h2 { font-family: var(--font); font-size: 1.25rem; margin: 0 0 8px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .control { margin: 0 0 10px; }
+  .control label, .query-label { display: flex; justify-content: space-between; gap: 8px; font-size: 0.82rem; font-weight: 650; }
+  .control label span, .hint { color: var(--muted); font-weight: 500; }
+  textarea { width: 100%; min-height: 88px; margin-top: 6px; border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px; background: #fff; color: var(--ink); font-family: var(--sans); font-size: 0.92rem; line-height: 1.4; resize: vertical; }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 0.86rem; margin: 8px 0; }
+  .hint { font-size: 0.78rem; margin: 4px 0 0; line-height: 1.4; }
+  .syn-list { margin: 6px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.75rem; }
+  .syn-list li + li { margin-top: 2px; }
+  main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  section.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; box-shadow: var(--shadow); }
+  section.card h2 { font-size: 1.25rem; margin: 0 0 6px; }
+  .meta { color: var(--body); font-size: 0.92rem; margin: 0 0 10px; }
+  .result { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; }
+  .result + .result, .miss + .miss { margin-top: 10px; }
+  .result.head { border-color: var(--accent); }
+  .result-top, .chunk-line { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .result-top h3 { margin: 0; font-size: 1.05rem; }
+  .owner { font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .chunk-text { margin: 8px 0; line-height: 1.55; }
+  mark.hit { background: #d7e6f2; color: var(--ink); padding: 0 2px; border-radius: 2px; }
+  mark.syn { background: #d7ebe3; color: var(--ink); padding: 0 2px; border-radius: 2px; }
+  .bars { display: flex; flex-direction: column; gap: 5px; margin: 6px 0; font-family: var(--sans); font-size: 0.75rem; }
+  .bar-row { display: grid; grid-template-columns: 92px 1fr 52px; gap: 8px; align-items: center; }
+  .track { height: 8px; background: #e4edf3; border-radius: 99px; overflow: hidden; }
+  .fill { height: 100%; background: var(--accent); border-radius: 99px; }
+  .fill.hash { background: var(--good); }
+  .fill.blend { background: var(--ink); }
+  .pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .pill { font-family: var(--sans); font-size: 0.72rem; border-radius: 99px; padding: 1px 7px; background: #e7eef3; color: var(--ink); }
+  .pill.syn { background: #d7ebe3; }
+  .miss { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 10px 12px; color: var(--muted); }
+  .cutoff { margin: 12px 0 8px; font-family: var(--sans); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .map { display: flex; flex-direction: column; gap: 8px; }
+  .map-row { display: grid; grid-template-columns: 168px 1fr; gap: 8px; align-items: start; }
+  .map-name { font-size: 0.82rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { border: 1px solid var(--line-strong); background: #fff; color: var(--muted); border-radius: 6px; padding: 2px 6px; font-family: var(--sans); font-size: 0.72rem; }
+  .chip.on { border-color: var(--accent); color: var(--accent); font-weight: 650; }
+  .note { border-left: 3px solid var(--accent); padding: 2px 0 2px 10px; margin: 8px 0 0; color: var(--body); }
+  details { margin-top: 8px; }
+  details summary { cursor: pointer; font-family: var(--sans); font-size: 0.82rem; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.78rem; margin-top: 6px; }
+  th, td { text-align: right; padding: 3px 6px; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; }
+  .doc { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
+  .doc h3 { font-size: 1rem; margin: 0; }
+  .doc p { margin: 4px 0 0; color: var(--body); }
+  .legend { color: var(--muted); font-family: var(--sans); font-size: 0.78rem; margin: 8px 0 0; }
+  .wrap > footer { margin-top: 16px; color: var(--muted); font-family: var(--sans); font-size: 0.82rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { position: static; max-height: none; }
+    header.top { flex-direction: column; align-items: stretch; }
+    .toy-flag { max-width: none; }
+    .map-row { grid-template-columns: 1fr; }
+    h1 { font-size: 1.7rem; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header demo-header">
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-name" href="../../index.html">Iorek Forges</a>
+      <div class="site-bar-right">
+        <span class="site-count">RAG</span>
+        <nav class="site-nav" aria-label="Site">
+          <a href="../../index.html">All demos</a>
+          <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Daily demo · 31 Oct 2026</div>
+      <h1>Which chunks come back, and why</h1>
+    </div>
+    <div class="toy-flag"><strong>Runs in the browser.</strong> BM25 and a hashed embedding over a fictional clinic handbook. No model call and no API key.</div>
+  </header>
+  <p class="lede">Northline Dental Group wants a help-desk bot over its HR and IT articles. Before anyone blames the model, this page shows which chunks a question actually retrieves, and which words pulled them up.</p>
+  <div class="layout">
+    <aside>
+      <h2>Question and index</h2>
+      <div class="presets" id="presets"></div>
+      <label class="query-label" for="query">Employee question</label>
+      <textarea id="query"></textarea>
+      <div class="control">
+        <label for="size">Chunk size <span id="size-out"></span></label>
+        <input id="size" type="range" min="24" max="120" step="4" value="80">
+      </div>
+      <div class="control">
+        <label for="overlap">Overlap <span id="overlap-out"></span></label>
+        <input id="overlap" type="range" min="0" max="110" step="2" value="20">
+      </div>
+      <div class="control">
+        <label for="topk">Top k <span id="topk-out"></span></label>
+        <input id="topk" type="range" min="1" max="8" step="1" value="4">
+      </div>
+      <div class="control">
+        <label for="alpha">Blend toward the hash <span id="alpha-out"></span></label>
+        <input id="alpha" type="range" min="0" max="1" step="0.05" value="0.65">
+      </div>
+      <p class="hint">0 is BM25 only. 1 is the hashed embedding only. Scores are scaled per query before they are mixed, the same idea as a hybrid alpha.</p>
+      <div class="control">
+        <label for="k1">BM25 k1 <span id="k1-out"></span></label>
+        <input id="k1" type="range" min="0" max="3" step="0.1" value="1.2">
+      </div>
+      <div class="control">
+        <label for="b">BM25 b <span id="b-out"></span></label>
+        <input id="b" type="range" min="0" max="1" step="0.05" value="0.75">
+      </div>
+      <div class="control">
+        <label for="dim">Hash dimensions <span id="dim-out"></span></label>
+        <input id="dim" type="range" min="16" max="128" step="16" value="64">
+      </div>
+      <label class="check"><input id="synonyms" type="checkbox" checked> Expand a small synonym list inside the hash only. BM25 still sees the words as written.</label>
+      <ul class="syn-list" id="syn-list"></ul>
+      <p class="hint">k1 = 1.2 and b = 0.75 are the Lucene defaults. Lower the dimensions and unrelated words start sharing buckets.</p>
+    </aside>
+    <main id="view"></main>
+  </div>
+  <footer>
+    <a href="../../index.html">All demos</a> · The handbook is fictional. The scorers are the ones described in the folder README.
+  </footer>
+</div>
+<script>
+"use strict";
+const STOP = new Set("a an the and or to of for in on at by with from is are was were be this that it as if you your we our do does how what when who can i my me than more after before into about not no its their them they many get has costs over just out up so only also".split(" "));
+const SYN_GROUPS = [
+  ["vacation", "pto", "leave"],
+  ["laptop", "computer", "hardware"],
+  ["password", "passphrase"],
+  ["badge", "keycard"],
+  ["expense", "reimbursement", "reimbursed"]
+];
+const SYN = new Map();
+for (const group of SYN_GROUPS) {
+  for (const word of group) SYN.set(word, group.filter((other) => other !== word));
+}
+const DOCS = [
+  { id: "pto", title: "Paid time off and clinic holidays", owner: "People Ops", text: "Paid time off. Northline Dental Group calls annual leave PTO in payroll and on the workday calendar. Full-time staff accrue PTO at 4.62 hours each biweekly pay period, which is 15 days of PTO in the first year after the start date. Accrual rises to 20 days of PTO in year four and 25 days of PTO in year eight. Part-time staff scheduled for at least twenty hours a week accrue at half that rate. No one may schedule PTO until 60 days after the start date. The balance is visible in payroll under the leave code PTO. People Ops will not approve a request that would take the balance negative. Bank holidays do not draw down the PTO balance. The shortage clinic list is published each quarter by the regional director. A hygienist named on that list is the only role the exception can cover. Dentists are not covered. Front desk staff are not covered. Office managers are not covered. The exception is easy to misread, so the allowance is stated on its own. During the waiting period that hygienist may take two PTO days if the clinic director emails People Ops before the day off. Unused PTO up to five days carries into the next calendar year. The rest is paid out on the last paycheck of December." },
+  { id: "vpn", title: "VPN and working from home", owner: "Service desk", text: "Remote access. Clinical staff who read the schedule from home use the Northline VPN. The client is Cisco AnyConnect. The gateway address is vpn.northline.example. Your VPN password is the same passphrase you use for email, and it is not the badge PIN. Multifactor is required. Approve the prompt in the Okta Verify app. If you are locked out, the service desk resets the VPN password only after you answer the two callback questions on file. Do not send the passphrase in chat. A reset from home takes about fifteen minutes once the desk confirms your employee number. The VPN drops after twelve hours and you sign in again. Shared front desk logins cannot start the VPN. Contractors use a guest profile that expires on the contract end date." },
+  { id: "passwords", title: "Passphrases and multifactor", owner: "Service desk", text: "Account passphrases. Email, imaging, and the ledger share one passphrase through Okta. The passphrase must be at least fourteen characters and it expires every 180 days. You cannot reuse any of the last ten passphrases. Multifactor is required for email even on the clinic network. SMS codes are not accepted. Use Okta Verify or a hardware key from the service desk. After five bad passphrase attempts the account locks for thirty minutes. The service desk will not unlock an account from a text message. Call the desk from a number that is on your employee record, or walk to the clinic admin station. Never write the passphrase on a sticky note on the scanner." },
+  { id: "hardware", title: "Laptops and clinic hardware", owner: "Finance", text: "Laptops and other hardware. A full-time clinician gets a managed laptop in the first week. The standard model is a 14 inch computer with 16 gigabytes of memory. People Ops places the order. A request above 1500 dollars needs the clinic director and the finance partner to both approve it in the hardware form. Replacements inside the three year cycle need the same two approvals and a note about what failed. Monitors and scanners are clinic equipment, not a personal computer, and the office manager orders them from the facilities catalog. Staff may not buy a laptop and expense it. Lost hardware is reported to the service desk the same day so the disk can be locked." },
+  { id: "phi", title: "Patient information outside the chart", owner: "Privacy", text: "Patient information outside the chart. Account numbers, treatment plans, and x-rays are patient information. Do not put them in email, in chat, or in a personal spreadsheet. If a spreadsheet of patient account numbers lands in a shared inbox, do not forward it and do not download it to a laptop. Call the privacy officer and the service desk, then move the message to the quarantine folder in the shared inbox. The privacy officer decides whether a patient notice is required. A screenshot of the schedule is still patient information if a name is visible. The imaging share is the only approved place for x-rays. Vendors do not get an export unless a business associate agreement is on file with compliance." },
+  { id: "badge", title: "Badges and clinic doors", owner: "Service desk", text: "Badges and doors. Your badge opens the clinic doors you are rostered to. It is not something you can loan to a coworker. Tailgating is not allowed even for someone you know. If a badge is lost, tell the service desk before your next shift so the card can be turned off. The desk prints a replacement the same day at the admin station. After a last day of employment, People Ops disables the badge at 5 pm local time. The badge will not open a door the next morning. Contractors are disabled on the contract end date even if the person is still in the building. Visitors sign in on paper and wear a sticker. They do not get a badge." },
+  { id: "benefits", title: "Benefits enrollment", owner: "People Ops", text: "Benefits enrollment. Medical, dental coverage for your own family, and the retirement plan open for changes during the first 30 days of employment and again each November. Outside those windows you need a qualifying life event. People Ops lists the accepted events on the benefits page. Coverage for a new baby starts on the date of birth if you submit the form within 30 days. The retirement match is 4 percent when you contribute at least 4 percent. Enrollment is in the benefits portal, not in payroll. Missing the November window keeps last year's elections. Questions about a claim go to the carrier, not to the front desk." },
+  { id: "expenses", title: "Travel and expense reports", owner: "Finance", text: "Travel and expense reports. Staff who travel to a continuing education course submit expenses within 14 days of the trip. Itemize lodging, the course fee, and meals. A meal over 75 dollars needs an itemized receipt and the name of the clinic director who approved the trip. Alcohol is not reimbursed. Mileage uses the rate posted by finance each January. Submit the report in the expense tool, not by email. Finance pays an approved report on the next biweekly paycheck. A report with a missing receipt sits in the queue until you attach one. People Ops does not approve travel expenses. Finance does." },
+  { id: "onboarding", title: "First week for a new clinician", owner: "People Ops", text: "First week for a new clinician. A new clinician starts on a Monday. People Ops meets them at the admin station with a badge form and a laptop agreement. The service desk hands over the managed computer and watches the disk encryption finish before the clinician leaves. Imaging access is requested by the clinic director, not by the clinician. The ledger login waits until the credentialing packet is complete. Shadow the front desk for one shift before seeing a full schedule. Parking is in the staff lot, not patient parking. The first paycheck arrives on the second biweekly Friday after the start date. Questions in week one go to the office manager, then to People Ops." }
+];
+const PRESETS = [
+  { id: "vacation", label: "Vacation days", query: "How many vacation days does a new clinician get in the first year?", size: 80, overlap: 20, alpha: 0.65, k: 4 },
+  { id: "lexical", label: "Keywords only", query: "How many vacation days does a new clinician get in the first year?", size: 80, overlap: 20, alpha: 0, k: 4 },
+  { id: "split", label: "Split the exception", query: "Can a hygienist take PTO in a shortage clinic during the waiting period?", size: 64, overlap: 0, alpha: 0.2, k: 4 },
+  { id: "bridge", label: "Overlap bridges it", query: "Can a hygienist take PTO in a shortage clinic during the waiting period?", size: 64, overlap: 24, alpha: 0.2, k: 4 },
+  { id: "vpn", label: "VPN reset", query: "How do I reset the VPN password from home?", size: 80, overlap: 20, alpha: 0.15, k: 3 },
+  { id: "phi", label: "Shared inbox", query: "A spreadsheet of patient account numbers landed in the shared inbox", size: 80, overlap: 20, alpha: 0.2, k: 3 },
+  { id: "laptop", label: "Laptop over $1500", query: "Who has to approve a laptop that costs more than 1500 dollars?", size: 80, overlap: 20, alpha: 0.35, k: 3 },
+  { id: "badge", label: "Keycard, last day", query: "When does my keycard stop working after my last day?", size: 80, overlap: 20, alpha: 0.7, k: 3 }
+];
+const state = { query: PRESETS[0].query, size: 80, overlap: 20, k: 4, alpha: 0.65, k1: 1.2, b: 0.75, dim: 64, synonyms: true };
+
+function tokenize(text) {
+  return (text.toLowerCase().match(/[a-z0-9]+/g) || []).filter((word) => word.length > 1 && !STOP.has(word));
+}
+function expand(tokens) {
+  const out = tokens.slice();
+  for (const token of tokens) {
+    const extras = SYN.get(token);
+    if (extras) out.push(...extras);
+  }
+  return out;
+}
+function wordsOf(text) { return text.split(/\s+/).filter(Boolean); }
+function chunkDoc(doc, size, overlap) {
+  const words = wordsOf(doc.text);
+  const step = Math.max(1, size - overlap);
+  const chunks = [];
+  for (let start = 0; start < words.length; start += step) {
+    const slice = words.slice(start, start + size);
+    if (!slice.length) break;
+    chunks.push({ docId: doc.id, title: doc.title, owner: doc.owner, start, end: start + slice.length, total: words.length, text: slice.join(" ") });
+    if (start + size >= words.length) break;
+  }
+  return chunks;
+}
+function fnv(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function embed(tokens, dim) {
+  const v = new Float64Array(dim);
+  for (const token of tokens) {
+    const h = fnv("t:" + token);
+    v[h % dim] += ((h >>> 16) & 1) ? 1 : -1;
+  }
+  let norm = 0;
+  for (let i = 0; i < dim; i++) norm += v[i] * v[i];
+  norm = Math.sqrt(norm);
+  if (!norm) return v;
+  for (let i = 0; i < dim; i++) v[i] /= norm;
+  return v;
+}
+function dot(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += a[i] * b[i];
+  return sum;
+}
+function bm25(chunks, queryTokens, k1, b) {
+  const N = chunks.length || 1;
+  const docs = chunks.map((chunk) => {
+    const tokens = tokenize(chunk.text);
+    const tf = new Map();
+    for (const token of tokens) tf.set(token, (tf.get(token) || 0) + 1);
+    return { tf, len: tokens.length };
+  });
+  const avgdl = docs.reduce((sum, doc) => sum + doc.len, 0) / N || 1;
+  const df = new Map();
+  for (const doc of docs) for (const token of doc.tf.keys()) df.set(token, (df.get(token) || 0) + 1);
+  return docs.map((doc) => {
+    let score = 0;
+    const terms = [...new Set(queryTokens)].map((term) => {
+      const freq = doc.tf.get(term) || 0;
+      const docsWith = df.get(term) || 0;
+      const idf = Math.log(1 + (N - docsWith + 0.5) / (docsWith + 0.5));
+      const denom = freq + k1 * (1 - b + b * (doc.len / avgdl));
+      const part = freq > 0 && denom ? idf * (freq * (k1 + 1)) / denom : 0;
+      score += part;
+      return { term, freq, docsWith, idf, part };
+    });
+    return { score, terms, len: doc.len, avgdl };
+  });
+}
+function retrieve(query, options) {
+  const chunks = DOCS.flatMap((doc) => chunkDoc(doc, options.size, options.overlap));
+  const queryTokens = tokenize(query);
+  const lexical = bm25(chunks, queryTokens, options.k1, options.b);
+  const queryHash = options.synonyms ? expand(queryTokens) : queryTokens.slice();
+  const qv = embed(queryHash, options.dim);
+  const dense = chunks.map((chunk) => {
+    const tokens = tokenize(chunk.text);
+    return dot(qv, embed(options.synonyms ? expand(tokens) : tokens, options.dim));
+  });
+  const maxBm = Math.max(0, ...lexical.map((row) => row.score));
+  const minCos = Math.min(...dense);
+  const maxCos = Math.max(...dense);
+  const span = maxCos - minCos;
+  const rows = chunks.map((chunk, index) => {
+    const tokens = tokenize(chunk.text);
+    const expanded = options.synonyms ? expand(tokens) : tokens;
+    const bm = lexical[index].score;
+    const cos = dense[index];
+    const bmNorm = maxBm > 0 ? bm / maxBm : 0;
+    const cosNorm = span > 1e-9 ? (cos - minCos) / span : 0;
+    return {
+      chunk, bm, cos, bmNorm, cosNorm,
+      hybrid: (1 - options.alpha) * bmNorm + options.alpha * cosNorm,
+      terms: lexical[index].terms,
+      len: lexical[index].len,
+      avgdl: lexical[index].avgdl,
+      shared: [...new Set(queryHash.filter((token) => expanded.includes(token)))]
+    };
+  });
+  rows.sort((a, b) => b.hybrid - a.hybrid || b.bm - a.bm || a.chunk.docId.localeCompare(b.chunk.docId) || a.chunk.start - b.chunk.start);
+  return { chunks, rows, queryTokens, queryHash, maxBm, avgdl: lexical[0] ? lexical[0].avgdl : 0 };
+}
+function insights(result) {
+  const { chunks, rows, queryTokens } = result;
+  const lines = [];
+  if (!queryTokens.length || !rows.length) return lines;
+  const topTokens = new Set(tokenize(rows[0].chunk.text));
+  const absent = queryTokens.filter((term) => !chunks.some((chunk) => tokenize(chunk.text).includes(term)));
+  if (absent.length) {
+    const via = state.synonyms ? absent.flatMap((term) => SYN.get(term) || []).filter((term, index, all) => all.indexOf(term) === index) : [];
+    lines.push(absent.map((term) => "“" + term + "”").join(", ") + (absent.length === 1 ? " is" : " are") + " not in the handbook" + (via.length ? ". With the synonym list on, the hash also looks for " + via.join(", ") + "." : "."));
+  }
+  const quote = (term) => "“" + term + "”";
+  const elsewhere = queryTokens.filter((term) => !absent.includes(term) && !topTokens.has(term));
+  if (elsewhere.length) {
+    const holder = rows.findIndex((row) => elsewhere.some((term) => tokenize(row.chunk.text).includes(term)));
+    const found = holder >= 0 ? elsewhere.filter((term) => tokenize(rows[holder].chunk.text).includes(term)) : [];
+    lines.push("The top chunk does not contain " + elsewhere.map(quote).join(" or ") + (holder > 0 ? ". Rank " + (holder + 1) + " contains " + found.map(quote).join(" and ") + "." : "."));
+  }
+  const surface = queryTokens.filter((term) => !absent.includes(term));
+  let split = "";
+  for (let i = 0; i < surface.length && !split; i++) {
+    for (let j = i + 1; j < surface.length; j++) {
+      const a = surface[i];
+      const b = surface[j];
+      if (topTokens.has(a) === topTokens.has(b)) continue;
+      const topDoc = rows[0].chunk.docId;
+      const inTopDoc = (term) => chunks.some((chunk) => chunk.docId === topDoc && tokenize(chunk.text).includes(term));
+      if (!inTopDoc(a) || !inTopDoc(b)) continue;
+      const together = chunks.some((chunk) => {
+        const tokens = new Set(tokenize(chunk.text));
+        return tokens.has(a) && tokens.has(b);
+      });
+      if (!together) {
+        split = quote(a) + " and " + quote(b) + " are in the same article but never in the same chunk. A larger window or more overlap is what puts them together.";
+        break;
+      }
+    }
+  }
+  if (split) lines.push(split);
+  return lines;
+}
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+function fmt(value, digits) { return Number.isFinite(value) ? value.toFixed(digits) : "0"; }
+function highlight(text, exact, synOnly) {
+  const exactSet = new Set(exact);
+  const synSet = new Set(synOnly.filter((term) => !exactSet.has(term)));
+  const terms = [...exactSet, ...synSet].sort((a, b) => b.length - a.length);
+  if (!terms.length) return esc(text);
+  const re = new RegExp("\\b(" + terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b", "gi");
+  let html = "";
+  let last = 0;
+  for (const match of text.matchAll(re)) {
+    html += esc(text.slice(last, match.index));
+    const word = match[1];
+    html += '<mark class="' + (exactSet.has(word.toLowerCase()) ? "hit" : "syn") + '">' + esc(word) + "</mark>";
+    last = match.index + word.length;
+  }
+  return html + esc(text.slice(last));
+}
+function bars(row) {
+  const items = [["BM25", row.bmNorm, ""], ["Hash", row.cosNorm, "hash"], ["Blend", row.hybrid, "blend"]];
+  return '<div class="bars">' + items.map(([label, value, cls]) => (
+    '<div class="bar-row"><span>' + label + "</span><div class=\"track\"><div class=\"fill " + cls + '" style="width:' + Math.max(0, Math.min(100, value * 100)) + '%"></div></div><span>' + fmt(value, 2) + "</span></div>"
+  )).join("") + "</div>";
+}
+function resultCard(row, rank, result, muted) {
+  const exact = result.queryTokens;
+  const synOnly = state.synonyms ? row.shared.filter((term) => !exact.includes(term)) : [];
+  const hits = row.terms.filter((term) => term.part > 0).sort((a, b) => b.part - a.part);
+  const table = '<table><thead><tr><th>Term</th><th>tf</th><th>df</th><th>idf</th><th>BM25</th></tr></thead><tbody>' +
+    row.terms.map((term) => "<tr><td>" + esc(term.term) + "</td><td>" + term.freq + "</td><td>" + term.docsWith + "</td><td>" + fmt(term.idf, 2) + "</td><td>" + fmt(term.part, 2) + "</td></tr>").join("") +
+    "</tbody></table>";
+  return '<article class="' + (muted ? "miss" : "result" + (rank === 1 ? " head" : "")) + '" id="rank-' + rank + '">' +
+    '<div class="result-top"><h3>' + (muted ? "Just outside · " : "") + "Rank " + rank + "</h3><span class=\"owner\">" + esc(row.chunk.owner) + "</span></div>" +
+    "<p><strong>" + esc(row.chunk.title) + "</strong></p>" +
+    '<p class="chunk-line"><span>Words ' + row.chunk.start + "–" + row.chunk.end + " of " + row.chunk.total + "</span><span>raw BM25 " + fmt(row.bm, 2) + " · cosine " + fmt(row.cos, 2) + "</span></p>" +
+    '<p class="chunk-text">' + highlight(row.chunk.text, exact, row.shared) + "</p>" +
+    bars(row) +
+    '<div class="pills">' + hits.map((term) => '<span class="pill">' + esc(term.term) + " " + fmt(term.part, 2) + "</span>").join("") +
+    synOnly.map((term) => '<span class="pill syn">' + esc(term) + " via hash</span>").join("") + "</div>" +
+    "<details><summary>Score terms for this chunk</summary>" + table + "</details></article>";
+}
+function render() {
+  const options = state;
+  const overlapMax = Math.max(0, options.size - 10);
+  options.overlap = Math.min(options.overlap, overlapMax);
+  const result = retrieve(options.query, options);
+  const top = result.rows.slice(0, options.k);
+  const outside = result.rows.slice(options.k, options.k + 2);
+  const kept = new Set(top.map((row) => row.chunk.docId + ":" + row.chunk.start));
+  const notes = insights(result);
+  const byDoc = new Map();
+  for (const chunk of result.chunks) {
+    if (!byDoc.has(chunk.docId)) byDoc.set(chunk.docId, []);
+    byDoc.get(chunk.docId).push(chunk);
+  }
+  const map = DOCS.map((doc) => {
+    const chips = (byDoc.get(doc.id) || []).map((chunk) => {
+      const on = kept.has(chunk.docId + ":" + chunk.start);
+      const rank = top.findIndex((row) => row.chunk.docId === chunk.docId && row.chunk.start === chunk.start);
+      return '<button type="button" class="chip' + (on ? " on" : "") + '" data-rank="' + (rank + 1) + '">' + (on ? rank + 1 + " · " : "") + chunk.start + "–" + chunk.end + "</button>";
+    }).join("");
+    return '<div class="map-row"><div class="map-name">' + esc(doc.title) + "</div><div class=\"chips\">" + chips + "</div></div>";
+  }).join("");
+  const docs = DOCS.map((doc) => '<div class="doc"><h3>' + esc(doc.title) + '</h3><p class="owner">' + esc(doc.owner) + " · " + wordsOf(doc.text).length + ' words</p><p>' + esc(doc.text) + "</p></div>").join("");
+  document.getElementById("view").innerHTML =
+    '<section class="card"><h2>Ranked chunks</h2><p class="meta">' + result.chunks.length + " chunks from " + DOCS.length + " articles. Average analyzed length " + fmt(result.avgdl, 1) + " terms. Showing " + top.length + ".</p>" +
+    (notes.length ? notes.map((line) => '<p class="note">' + esc(line) + "</p>").join("") : "") +
+    (top.length ? top.map((row, index) => resultCard(row, index + 1, result, false)).join("") : "<p>Type a question the help desk would actually get.</p>") +
+    (outside.length ? '<p class="cutoff">Below the cutoff</p>' + outside.map((row, index) => resultCard(row, options.k + index + 1, result, true)).join("") : "") +
+    '<p class="legend"><mark class="hit">Blue</mark> is a query word. <mark class="syn">Green</mark> is a synonym the hash added. BM25 does not score the green words.</p></section>' +
+    '<section class="card"><h2>Where the chunks sit</h2><p class="meta">Each chip is one window. A number means it is inside the top ' + options.k + ". Overlap is why neighboring chips cover the same words.</p><div class=\"map\">" + map + "</div></section>" +
+    '<section class="card"><h2>The handbook</h2><p class="meta">Nine articles a clinic help desk would actually index. Nothing here is a real policy.</p>' + docs +
+    "<details><summary>The two formulas</summary><p>BM25 uses Lucene's idf, <code>log(1 + (N − df + 0.5) / (df + 0.5))</code>, times <code>tf · (k1 + 1) / (tf + k1 · (1 − b + b · dl / avgdl))</code>. Stopwords are dropped before counting. The hash is the hashing trick: each term adds +1 or −1 into <code>hash(term) mod d</code>, then the vector is L2-normalized and compared with cosine. The blend is <code>(1 − α) · bm25/max + α · cosine scaled across this result list</code>.</p></details></section>";
+  syncControls(overlapMax);
+}
+function syncControls(overlapMax) {
+  const queryBox = document.getElementById("query");
+  if (queryBox.value !== state.query) queryBox.value = state.query;
+  document.getElementById("size").value = String(state.size);
+  const overlap = document.getElementById("overlap");
+  overlap.max = String(overlapMax);
+  overlap.value = String(state.overlap);
+  document.getElementById("topk").value = String(state.k);
+  document.getElementById("alpha").value = String(state.alpha);
+  document.getElementById("k1").value = String(state.k1);
+  document.getElementById("b").value = String(state.b);
+  document.getElementById("dim").value = String(state.dim);
+  document.getElementById("synonyms").checked = state.synonyms;
+  document.getElementById("size-out").textContent = state.size + " words";
+  document.getElementById("overlap-out").textContent = state.overlap + " words";
+  document.getElementById("topk-out").textContent = String(state.k);
+  document.getElementById("alpha-out").textContent = state.alpha.toFixed(2);
+  document.getElementById("k1-out").textContent = state.k1.toFixed(1);
+  document.getElementById("b-out").textContent = state.b.toFixed(2);
+  document.getElementById("dim-out").textContent = String(state.dim);
+  document.querySelectorAll("#presets button").forEach((button) => {
+    const preset = PRESETS.find((item) => item.id === button.dataset.preset);
+    const on = preset.query === state.query && preset.size === state.size && preset.overlap === state.overlap && preset.alpha === state.alpha && preset.k === state.k;
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+function boot() {
+  document.getElementById("presets").innerHTML = PRESETS.map((preset) => '<button type="button" data-preset="' + preset.id + '">' + preset.label + "</button>").join("");
+  document.getElementById("syn-list").innerHTML = SYN_GROUPS.map((group) => "<li>" + group.join(" · ") + "</li>").join("");
+  const bind = (id, key, read) => document.getElementById(id).addEventListener("input", (event) => {
+    state[key] = read(event.target);
+    render();
+  });
+  bind("query", "query", (el) => el.value);
+  bind("size", "size", (el) => Number(el.value));
+  bind("overlap", "overlap", (el) => Number(el.value));
+  bind("topk", "k", (el) => Number(el.value));
+  bind("alpha", "alpha", (el) => Number(el.value));
+  bind("k1", "k1", (el) => Number(el.value));
+  bind("b", "b", (el) => Number(el.value));
+  bind("dim", "dim", (el) => Number(el.value));
+  document.getElementById("synonyms").addEventListener("change", (event) => { state.synonyms = event.target.checked; render(); });
+  document.getElementById("presets").addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    const preset = PRESETS.find((item) => item.id === button.dataset.preset);
+    Object.assign(state, preset);
+    render();
+  });
+  document.getElementById("view").addEventListener("click", (event) => {
+    const chip = event.target.closest(".chip");
+    if (!chip) return;
+    const rank = Number(chip.dataset.rank);
+    const card = rank ? document.getElementById("rank-" + rank) : null;
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  render();
+}
+globalThis.__rag = { retrieve, tokenize, DOCS, PRESETS, state, insights };
+if (typeof document !== "undefined") boot();
+</script>
+</body>
+</html>

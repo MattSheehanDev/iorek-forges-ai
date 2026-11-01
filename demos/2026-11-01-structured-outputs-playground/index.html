@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Structured Outputs Playground · Iorek Forges</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%233b6a8f' width='32' height='32' rx='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../../assets/theme.css">
+<style>
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 8px 24px 56px; }
+  header.top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin: 8px 0 14px; }
+  .eyebrow { color: var(--accent); font-family: var(--sans); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6px; }
+  h1 { font-size: 2.15rem; line-height: 1.05; margin: 0; }
+  .toy-flag { background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; max-width: 320px; font-size: 0.86rem; }
+  .toy-flag strong { color: #c5d7e6; }
+  .lede { margin: 0 0 18px; }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  aside { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); font-family: var(--sans); }
+  aside h2 { font-family: var(--font); font-size: 1.25rem; margin: 0 0 8px; }
+  .presets { display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: 0 0 12px; }
+  .presets button { text-align: left; }
+  .transport { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .hint { color: var(--muted); font-size: 0.78rem; margin: 6px 0 0; line-height: 1.45; }
+  main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  section.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; box-shadow: var(--shadow); }
+  section.card h2 { font-size: 1.25rem; margin: 0 0 6px; }
+  .meta { color: var(--body); margin: 0 0 10px; }
+  .source { white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-family: var(--sans); font-size: 0.9rem; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pane { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fff; min-width: 0; }
+  .pane h3 { margin: 0 0 6px; font-size: 1rem; }
+  .tape { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.78rem; line-height: 1.45; background: var(--bg); border-radius: 6px; padding: 8px; min-height: 7.5rem; margin: 0; }
+  .tape mark { background: #d7e6f2; color: var(--ink); border-radius: 2px; }
+  .tape mark.bad { background: #f4ddd6; }
+  .status { margin-top: 8px; font-family: var(--sans); font-size: 0.82rem; border-left: 3px solid var(--line-strong); padding-left: 8px; }
+  .status.valid { border-color: var(--good); color: var(--good); }
+  .status.schema, .status.impossible { border-color: #8a3d32; color: #6e3229; }
+  .status.partial { border-color: var(--accent); color: var(--body); }
+  .checks { list-style: none; margin: 8px 0 0; padding: 0; font-family: var(--sans); font-size: 0.78rem; }
+  .checks li { padding: 2px 0 2px 14px; position: relative; }
+  .checks li::before { content: ""; width: 7px; height: 7px; border-radius: 99px; position: absolute; left: 0; top: 0.5em; background: var(--line-strong); }
+  .checks li.ok::before { background: var(--good); }
+  .checks li.bad::before { background: #8a3d32; }
+  .mask { display: flex; flex-direction: column; gap: 6px; }
+  .mask-row { display: grid; grid-template-columns: minmax(88px, 160px) 1fr 92px; gap: 8px; align-items: center; font-family: var(--sans); font-size: 0.78rem; }
+  .mask-row code { font-size: 0.78rem; }
+  .track { height: 10px; background: #e4edf3; border-radius: 99px; overflow: hidden; position: relative; }
+  .fill { height: 100%; background: var(--accent); }
+  .mask-row.blocked .fill { background: repeating-linear-gradient(-45deg, #e7e0dc, #e7e0dc 3px, #f4ddd6 3px, #f4ddd6 6px); }
+  .mask-row.pick .token { font-weight: 700; }
+  .why { grid-column: 1 / -1; color: var(--muted); margin: -2px 0 2px; }
+  pre.schema { overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 0.75rem; line-height: 1.4; margin: 0; }
+  .step-label { font-family: var(--sans); font-size: 0.82rem; color: var(--muted); }
+  .wrap > footer { margin-top: 16px; color: var(--muted); font-family: var(--sans); font-size: 0.82rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  @media (max-width: 900px) {
+    .layout, .pair, .mask-row { grid-template-columns: 1fr; }
+    aside { position: static; max-height: none; }
+    header.top { flex-direction: column; align-items: stretch; }
+    .toy-flag { max-width: none; }
+    h1 { font-size: 1.7rem; }
+    .why { grid-column: auto; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header demo-header">
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-name" href="../../index.html">Iorek Forges</a>
+      <div class="site-bar-right">
+        <span class="site-count">Schema</span>
+        <nav class="site-nav" aria-label="Site">
+          <a href="../../index.html">All demos</a>
+          <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Daily demo · 1 Nov 2026</div>
+      <h1>Watch the schema reject the next token</h1>
+    </div>
+    <div class="toy-flag"><strong>Simulated decoder.</strong> The logits are scripted. The mask is not: a token is kept only when the text so far can still become valid JSON for this schema.</div>
+  </header>
+  <p class="lede">Northline's billing desk wants a model to turn an email or a vendor invoice into JSON their queue can save. Constrained decoding does that by zeroing illegal next tokens while the text is being written, instead of hoping a later parse succeeds.</p>
+  <div class="layout">
+    <aside>
+      <h2>Extraction</h2>
+      <div class="presets" id="presets"></div>
+      <div class="transport" id="transport">
+        <button type="button" class="btn" id="back">Back</button>
+        <button type="button" class="btn" id="step">Step</button>
+        <button type="button" class="btn" id="play">Play</button>
+        <button type="button" class="btn" id="reset">Reset</button>
+      </div>
+      <label class="step-label" for="scrub">Position <span id="pos-out"></span></label>
+      <input id="scrub" type="range" min="0" max="1" value="0">
+      <p class="hint" id="lesson"></p>
+      <p class="hint">Play walks one token at a time. The left tape can only emit a token the grammar still allows. The right tape takes the simulated model's favorite, including the ones the mask removed.</p>
+    </aside>
+    <main id="view"></main>
+  </div>
+  <footer>
+    <a href="../../index.html">All demos</a> · No model is called. Sources for the real decoding systems are in the folder README.
+  </footer>
+</div>
+<script>
+"use strict";
+function skipWs(s, i) {
+  while (i < s.length && " \n\r\t".includes(s[i])) i++;
+  return i;
+}
+
+function scanString(s, i) {
+  if (s[i] !== '"') return { status: "reject", reason: "Expected a quoted string." };
+  let content = "";
+  let j = i + 1;
+  while (j < s.length) {
+    const c = s[j];
+    if (c === '"') return { status: "complete", content, index: j + 1 };
+    if (c === "\\") {
+      if (j + 1 >= s.length) return { status: "partial", content };
+      const n = s[j + 1];
+      const simple = { '"': '"', "\\": "\\", "/": "/", b: "\b", f: "\f", n: "\n", r: "\r", t: "\t" };
+      if (Object.prototype.hasOwnProperty.call(simple, n)) {
+        content += simple[n];
+        j += 2;
+        continue;
+      }
+      if (n === "u") {
+        if (j + 6 > s.length) return { status: "partial", content };
+        const hex = s.slice(j + 2, j + 6);
+        if (!/^[0-9a-fA-F]{4}$/.test(hex)) return { status: "reject", reason: "Bad unicode escape." };
+        content += String.fromCharCode(parseInt(hex, 16));
+        j += 6;
+        continue;
+      }
+      return { status: "reject", reason: "Bad escape in a string." };
+    }
+    if (c.charCodeAt(0) < 32) return { status: "reject", reason: "Raw control character in a string." };
+    content += c;
+    j++;
+  }
+  return { status: "partial", content };
+}
+
+function compilePattern(pattern) {
+  const match = /^\^([A-Za-z]+)-\[0-9\]\{(\d+)\}\$$/.exec(pattern);
+  if (!match) return null;
+  const literal = match[1] + "-";
+  const digits = Number(match[2]);
+  return {
+    prefixOk(content) {
+      if (literal.startsWith(content)) return true;
+      if (!content.startsWith(literal)) return false;
+      const rest = content.slice(literal.length);
+      return /^[0-9]*$/.test(rest) && rest.length <= digits;
+    },
+    fullOk(content) {
+      if (!content.startsWith(literal)) return false;
+      const rest = content.slice(literal.length);
+      return new RegExp("^[0-9]{" + digits + "}$").test(rest);
+    }
+  };
+}
+
+function stringProblem(schema, content, closed) {
+  if (schema.enum) {
+    if (closed) return schema.enum.includes(content) ? null : "Value is not in the enum: " + schema.enum.join(", ") + ".";
+    return schema.enum.some((value) => value.startsWith(content)) ? null : "This cannot become one of: " + schema.enum.join(", ") + ".";
+  }
+  if (schema.pattern) {
+    const spec = compilePattern(schema.pattern);
+    if (spec) {
+      if (!spec.prefixOk(content)) return "This cannot match " + schema.pattern + ".";
+      if (closed && !spec.fullOk(content)) return "Value does not match " + schema.pattern + ".";
+    } else if (closed && !new RegExp(schema.pattern).test(content)) {
+      return "Value does not match " + schema.pattern + ".";
+    }
+  }
+  if (closed && schema.minLength && content.length < schema.minLength) {
+    return "Shorter than minLength " + schema.minLength + ".";
+  }
+  return null;
+}
+
+function parseString(schema, s, i) {
+  if (s[i] !== '"') return { status: "reject", reason: "Expected a JSON string, not an unquoted value." };
+  const scan = scanString(s, i);
+  if (scan.status === "reject") return scan;
+  const problem = stringProblem(schema, scan.content, scan.status === "complete");
+  if (problem) return { status: "reject", reason: problem };
+  if (scan.status === "partial") return { status: "partial" };
+  return { status: "complete", index: scan.index };
+}
+
+function parseInteger(schema, s, i) {
+  const min = schema.minimum == null ? -Infinity : schema.minimum;
+  if (s[i] === '"') return { status: "reject", reason: "Expected an integer, got a string." };
+  let j = i;
+  if (s[j] === "-") j++;
+  if (j >= s.length) return { status: "partial" };
+  if (!/[0-9]/.test(s[j])) return { status: "reject", reason: "Expected an integer." };
+  if (s[j] === "0" && j + 1 < s.length && /[0-9]/.test(s[j + 1])) {
+    return { status: "reject", reason: "Leading zeros are not allowed in a JSON number." };
+  }
+  while (j < s.length && /[0-9]/.test(s[j])) j++;
+  if (j < s.length && (s[j] === "." || s[j] === "e" || s[j] === "E")) {
+    return { status: "reject", reason: "Expected an integer, got a decimal or exponent." };
+  }
+  const raw = s.slice(i, j);
+  if (j >= s.length) {
+    if (raw === "-") return { status: "partial" };
+    const value = Number(raw);
+    if (raw.startsWith("-") && value < min) return { status: "reject", reason: "Integer is below the minimum and more digits would make it smaller." };
+    return { status: "partial" };
+  }
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < min) return { status: "reject", reason: "Integer is below the minimum of " + min + "." };
+  return { status: "complete", index: j };
+}
+
+function parseValue(schema, s, i) {
+  i = skipWs(s, i);
+  if (i >= s.length) return { status: "partial" };
+  if (schema.enum || schema.type === "string") return parseString(schema, s, i);
+  if (schema.type === "object") return parseObject(schema, s, i);
+  if (schema.type === "array") return parseArray(schema, s, i);
+  if (schema.type === "integer") return parseInteger(schema, s, i);
+  return { status: "reject", reason: "This demo's grammar does not cover that schema type." };
+}
+
+function parseObject(schema, s, i) {
+  if (s[i] !== "{") return { status: "reject", reason: "Expected '{' to start an object." };
+  let j = skipWs(s, i + 1);
+  if (j >= s.length) return { status: "partial" };
+  const props = schema.properties || {};
+  const required = schema.required || [];
+  const seen = new Set();
+  const additional = schema.additionalProperties !== false;
+  if (s[j] === "}") {
+    const missing = required.filter((key) => !seen.has(key));
+    if (missing.length) return { status: "reject", reason: "Missing required " + missing.join(", ") + "." };
+    return { status: "complete", index: j + 1 };
+  }
+  while (true) {
+    if (s[j] !== '"') return { status: "reject", reason: "Expected a quoted property name." };
+    const keyScan = scanString(s, j);
+    if (keyScan.status === "reject") return keyScan;
+    if (keyScan.status === "partial") {
+      const remaining = Object.keys(props).filter((key) => !seen.has(key));
+      if (!additional && !remaining.some((key) => key.startsWith(keyScan.content))) {
+        return { status: "reject", reason: "No remaining property starts with \"" + keyScan.content + "\"." };
+      }
+      return { status: "partial" };
+    }
+    const key = keyScan.content;
+    j = skipWs(s, keyScan.index);
+    if (!additional && !Object.prototype.hasOwnProperty.call(props, key)) {
+      return { status: "reject", reason: "Additional property \"" + key + "\" is not in the schema." };
+    }
+    if (seen.has(key)) return { status: "reject", reason: "Property \"" + key + "\" is repeated." };
+    seen.add(key);
+    if (j >= s.length) return { status: "partial" };
+    if (s[j] !== ":") return { status: "reject", reason: "Expected ':' after \"" + key + "\"." };
+    j = skipWs(s, j + 1);
+    if (j >= s.length) return { status: "partial" };
+    const valueSchema = props[key];
+    if (!valueSchema) return { status: "reject", reason: "No schema for \"" + key + "\"." };
+    const value = parseValue(valueSchema, s, j);
+    if (value.status !== "complete") return value;
+    j = skipWs(s, value.index);
+    if (j >= s.length) return { status: "partial" };
+    if (s[j] === "}") {
+      const missing = required.filter((name) => !seen.has(name));
+      if (missing.length) return { status: "reject", reason: "Missing required " + missing.join(", ") + "." };
+      return { status: "complete", index: j + 1 };
+    }
+    if (s[j] === ",") {
+      j = skipWs(s, j + 1);
+      if (j >= s.length) {
+        const remaining = Object.keys(props).filter((name) => !seen.has(name));
+        if (!additional && remaining.length === 0) {
+          return { status: "reject", reason: "Trailing comma. Every allowed property is already set." };
+        }
+        return { status: "partial" };
+      }
+      if (s[j] === "}") return { status: "reject", reason: "Trailing comma before '}'." };
+      continue;
+    }
+    return { status: "reject", reason: "Expected ',' or '}' after a property." };
+  }
+}
+
+function parseArray(schema, s, i) {
+  if (s[i] !== "[") return { status: "reject", reason: "Expected '[' to start an array." };
+  let j = skipWs(s, i + 1);
+  if (j >= s.length) return { status: "partial" };
+  const minItems = schema.minItems || 0;
+  const maxItems = schema.maxItems == null ? Infinity : schema.maxItems;
+  let count = 0;
+  if (s[j] === "]") {
+    if (count < minItems) return { status: "reject", reason: "Need at least " + minItems + " item." };
+    return { status: "complete", index: j + 1 };
+  }
+  while (true) {
+    if (count >= maxItems) return { status: "reject", reason: "The array is already at maxItems " + maxItems + "." };
+    const value = parseValue(schema.items, s, j);
+    if (value.status !== "complete") return value;
+    count++;
+    j = skipWs(s, value.index);
+    if (j >= s.length) return { status: "partial" };
+    if (s[j] === "]") {
+      if (count < minItems) return { status: "reject", reason: "Need at least " + minItems + " item." };
+      return { status: "complete", index: j + 1 };
+    }
+    if (s[j] === ",") {
+      j = skipWs(s, j + 1);
+      if (j >= s.length) {
+        if (count >= maxItems) return { status: "reject", reason: "Trailing comma, and the array is already full." };
+        return { status: "partial" };
+      }
+      if (s[j] === "]") return { status: "reject", reason: "Trailing comma before ']'." };
+      continue;
+    }
+    return { status: "reject", reason: "Expected ',' or ']' in the array." };
+  }
+}
+
+function assess(schema, text) {
+  if (text === "") return { status: "partial" };
+  const parsed = parseValue(schema, text, 0);
+  if (parsed.status !== "complete") return parsed;
+  const rest = skipWs(text, parsed.index);
+  if (rest < text.length) return { status: "reject", reason: "Extra characters after a finished value." };
+  return { status: "complete", index: rest };
+}
+
+function schemaErrors(schema, value, path) {
+  const errors = [];
+  const here = path || "$";
+  if (schema.enum) {
+    if (typeof value !== "string" || !schema.enum.includes(value)) errors.push(here + " must be one of " + schema.enum.join(", ") + ".");
+    return errors;
+  }
+  if (schema.type === "object") {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      errors.push(here + " must be an object.");
+      return errors;
+    }
+    for (const key of schema.required || []) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) errors.push(here + " is missing " + key + ".");
+    }
+    for (const key of Object.keys(value)) {
+      if (schema.additionalProperties === false && !Object.prototype.hasOwnProperty.call(schema.properties, key)) {
+        errors.push(here + ' has additional property "' + key + '".');
+      } else if (schema.properties[key]) {
+        errors.push(...schemaErrors(schema.properties[key], value[key], here + "." + key));
+      }
+    }
+    return errors;
+  }
+  if (schema.type === "array") {
+    if (!Array.isArray(value)) {
+      errors.push(here + " must be an array.");
+      return errors;
+    }
+    if (schema.minItems && value.length < schema.minItems) errors.push(here + " needs at least " + schema.minItems + " item.");
+    if (schema.maxItems != null && value.length > schema.maxItems) errors.push(here + " has more than " + schema.maxItems + " items.");
+    value.forEach((item, index) => errors.push(...schemaErrors(schema.items, item, here + "[" + index + "]")));
+    return errors;
+  }
+  if (schema.type === "string") {
+    if (typeof value !== "string") {
+      errors.push(here + " must be a string.");
+      return errors;
+    }
+    if (schema.minLength && value.length < schema.minLength) errors.push(here + " is shorter than " + schema.minLength + ".");
+    if (schema.pattern && !new RegExp(schema.pattern).test(value)) errors.push(here + " does not match " + schema.pattern + ".");
+    return errors;
+  }
+  if (schema.type === "integer") {
+    if (typeof value !== "number" || !Number.isInteger(value)) {
+      errors.push(here + " must be an integer.");
+      return errors;
+    }
+    if (schema.minimum != null && value < schema.minimum) errors.push(here + " is below " + schema.minimum + ".");
+    return errors;
+  }
+  return errors;
+}
+
+function judge(schema, text) {
+  if (!text.trim()) return { state: "partial", message: "Waiting for the first token." };
+  const gate = assess(schema, text);
+  try {
+    const value = JSON.parse(text);
+    const errors = schemaErrors(schema, value);
+    if (errors.length) return { state: "schema", message: errors.join(" "), errors };
+    return { state: "valid", message: "JSON parses, and every schema check passed." };
+  } catch (error) {
+    if (gate.status === "reject") {
+      return { state: "impossible", message: gate.reason || "This prefix cannot be completed under the schema.", json: error.message };
+    }
+    return { state: "partial", message: "Still a valid prefix. The JSON is not finished." };
+  }
+}
+
+function best(items) {
+  return items.slice().sort((a, b) => b.logit - a.logit || a.text.length - b.text.length)[0];
+}
+
+function proposalsFor(traps, prefix, gold) {
+  const hits = traps.filter((trap) => prefix.endsWith(trap.when));
+  hits.sort((a, b) => b.when.length - a.when.length);
+  if (hits.length) return hits[0].options.map((option) => ({ ...option }));
+  return [
+    { text: gold, logit: 3.2 },
+    { text: "null", logit: 0.35 },
+    { text: "}", logit: 0.2 }
+  ];
+}
+
+function simulate(schema, gold, traps, derail) {
+  const steps = [];
+  let cPrefix = "";
+  let uPrefix = "";
+  let diverged = false;
+  let derailIndex = 0;
+  for (let g = 0; g < gold.length; g++) {
+    const goldTok = gold[g];
+    const props = proposalsFor(traps, cPrefix, goldTok).map((option) => {
+      const gate = assess(schema, cPrefix + option.text);
+      return { ...option, ok: gate.status !== "reject", reason: gate.reason || "" };
+    });
+    const allowed = props.filter((option) => option.ok);
+    const cPick = best(allowed);
+    let uPick;
+    if (!diverged) {
+      uPick = best(props);
+      if (!uPick || uPick.text !== cPick.text) diverged = true;
+    } else if (derailIndex < derail.length) {
+      const text = derail[derailIndex++];
+      const gate = assess(schema, uPrefix + text);
+      uPick = { text, logit: 0.8, ok: gate.status !== "reject", reason: gate.reason || "" };
+    } else {
+      uPick = null;
+    }
+    steps.push({ props, cPick, uPick, cPrefix, uPrefix });
+    if (!cPick || cPick.text !== goldTok) {
+      return { error: "Constrained pick left the gold path at " + JSON.stringify(cPrefix) + " picked " + (cPick && cPick.text), steps, cPrefix, uPrefix };
+    }
+    cPrefix += cPick.text;
+    if (uPick) uPrefix += uPick.text;
+  }
+  while (derailIndex < derail.length) {
+    const text = derail[derailIndex++];
+    const gate = assess(schema, uPrefix + text);
+    const uPick = { text, logit: 0.8, ok: gate.status !== "reject", reason: gate.reason || "" };
+    steps.push({ props: [uPick], cPick: null, uPick, cPrefix, uPrefix, extra: true });
+    uPrefix += text;
+  }
+  return { steps, cPrefix, uPrefix };
+}
+const ticketSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["ticket_id", "requester", "priority", "category", "summary", "refund_cents"],
+  properties: {
+    ticket_id: { type: "string", pattern: "^SUP-[0-9]{4}$" },
+    requester: { type: "string", minLength: 3 },
+    priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
+    category: { type: "string", enum: ["billing", "access", "shipping", "outage"] },
+    summary: { type: "string", minLength: 8 },
+    refund_cents: { type: "integer", minimum: 0 }
+  }
+};
+const ticketGold = ["{", '"ticket_id"', ":", '"SUP-4419"', ",", '"requester"', ":", '"Priya Nandakumar"', ",", '"priority"', ":", '"urgent"', ",", '"category"', ":", '"billing"', ",", '"summary"', ":", '"Charged twice for order 4419"', ",", '"refund_cents"', ":", "4200", "}"];
+const invoiceSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["vendor", "invoice_number", "currency", "line_items", "total_cents"],
+  properties: {
+    vendor: { type: "string", minLength: 3 },
+    invoice_number: { type: "string", pattern: "^INV-[0-9]{4}$" },
+    currency: { type: "string", enum: ["USD", "EUR", "GBP"] },
+    line_items: {
+      type: "array",
+      minItems: 1,
+      maxItems: 4,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["description", "qty", "unit_cents"],
+        properties: {
+          description: { type: "string", minLength: 3 },
+          qty: { type: "integer", minimum: 1 },
+          unit_cents: { type: "integer", minimum: 0 }
+        }
+      }
+    },
+    total_cents: { type: "integer", minimum: 0 }
+  }
+};
+const invoiceGold = ["{", '"vendor"', ":", '"BrightFold Paper"', ",", '"invoice_number"', ":", '"INV-1044"', ",", '"currency"', ":", '"USD"', ",", '"line_items"', ":", "[", "{", '"description"', ":", '"Copy paper"', ",", '"qty"', ":", "4", ",", '"unit_cents"', ":", "1299", "}", "]", ",", '"total_cents"', ":", "5196", "}"];
+const SCENARIOS = [
+  {
+    id: "enum",
+    label: "Unquoted priority",
+    title: "Support ticket, unquoted enum",
+    lesson: "The email says the word urgent. A JSON schema enum is still a string, so the mask drops the bare word and the sampler is left with \"urgent\".",
+    source: "From: Priya Nandakumar <priya@northline.example>\nTo: billing@northline.example\nSubject: Charged twice for order 4419\n\nI was charged $42.00 twice on March 2 for order 4419. Please refund one of the charges. This is urgent. The card is the clinic corporate card, so the category is billing.",
+    schema: ticketSchema,
+    gold: ticketGold,
+    traps: [{ when: '"priority":', options: [{ text: "urgent", logit: 4.4 }, { text: '"urgent"', logit: 2.2 }, { text: '"high"', logit: 1.3 }, { text: "null", logit: 0.4 }] }],
+    derail: []
+  },
+  {
+    id: "cents",
+    label: "Dollars, plus an extra field",
+    title: "Support ticket, cents and a stray field",
+    lesson: "The refund is $42.00 in the email and 4200 in the schema, because the field is integer cents. 42.00 is not an integer token. The unconstrained draft then invents sentiment, which additionalProperties rejects.",
+    source: "From: Priya Nandakumar <priya@northline.example>\nTo: billing@northline.example\nSubject: Charged twice for order 4419\n\nI was charged $42.00 twice on March 2 for order 4419. Please refund one of the charges. This is urgent. The card is the clinic corporate card, so the category is billing.",
+    schema: ticketSchema,
+    gold: ticketGold,
+    traps: [{ when: '"refund_cents":', options: [{ text: "42.00", logit: 4.1 }, { text: '"4200"', logit: 2.5 }, { text: "4200", logit: 2.2 }, { text: "0", logit: 0.4 }] }],
+    derail: [",", '"sentiment"', ":", '"angry"', "}"]
+  },
+  {
+    id: "comma",
+    label: "Trailing comma",
+    title: "Support ticket, trailing comma",
+    lesson: "Once every required field is set, a comma has nowhere legal to go. The mask removes it before the model can close the object on a trailing comma.",
+    source: "From: Priya Nandakumar <priya@northline.example>\nTo: billing@northline.example\nSubject: Charged twice for order 4419\n\nI was charged $42.00 twice on March 2 for order 4419. Please refund one of the charges. This is urgent. The card is the clinic corporate card, so the category is billing.",
+    schema: ticketSchema,
+    gold: ticketGold,
+    traps: [{ when: "4200", options: [{ text: ",", logit: 3.6 }, { text: '"sentiment"', logit: 2.4 }, { text: "}", logit: 2.0 }] }],
+    derail: ["}"]
+  },
+  {
+    id: "invoice",
+    label: "Invoice quantity",
+    title: "Vendor invoice, quantity and a trailing comma",
+    lesson: "Qty is an integer. The simulated model prefers 4.0, which the mask blocks, and the unconstrained draft later leaves a comma before the array closes.",
+    source: "BrightFold Paper\nInvoice INV-1044\nCurrency USD\n\nCopy paper    qty 4    12.99 dollars each\nTotal 51.96 dollars",
+    schema: invoiceSchema,
+    gold: invoiceGold,
+    traps: [
+      { when: '"currency":', options: [{ text: '"USD"', logit: 3.4 }, { text: "USD", logit: 2.1 }, { text: '"usd"', logit: 1.1 }] },
+      { when: '"qty":', options: [{ text: "4.0", logit: 3.9 }, { text: '"4"', logit: 1.5 }, { text: "4", logit: 2.3 }] }
+    ],
+    derail: [",", '"unit_cents"', ":", "1299", ",", "]"]
+  }
+];
+const state = { id: "enum", cursor: 0 };
+let timer = 0;
+
+function softmax(logits) {
+  const peak = Math.max(...logits);
+  const exps = logits.map((value) => Math.exp(value - peak));
+  const total = exps.reduce((sum, value) => sum + value, 0) || 1;
+  return exps.map((value) => value / total);
+}
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+function scenario() { return SCENARIOS.find((item) => item.id === state.id); }
+function run() {
+  const item = scenario();
+  return simulate(item.schema, item.gold, item.traps, item.derail);
+}
+function textsAt(steps, cursor) {
+  if (cursor <= 0) return { c: "", u: "", cTok: "", uTok: "" };
+  const step = steps[cursor - 1];
+  return {
+    c: step.cPrefix + (step.cPick ? step.cPick.text : ""),
+    u: step.uPrefix + (step.uPick ? step.uPick.text : ""),
+    cTok: step.cPick ? step.cPick.text : "",
+    uTok: step.uPick ? step.uPick.text : ""
+  };
+}
+function paint(text, token, bad) {
+  if (!text) return '<span class="step-label">Nothing written yet.</span>';
+  if (token && text.endsWith(token)) {
+    return esc(text.slice(0, -token.length)) + '<mark class="' + (bad ? "bad" : "") + '">' + esc(token) + "</mark>";
+  }
+  return esc(text);
+}
+function statusClass(verdict) { return verdict.state === "valid" ? "valid" : verdict.state === "partial" ? "partial" : "impossible"; }
+function checklist(schema, text) {
+  let value;
+  try { value = JSON.parse(text); } catch (error) { return ""; }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+  const rows = (schema.required || []).map((key) => {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) return '<li class="bad">' + esc(key) + " missing</li>";
+    const errors = schemaErrors(schema.properties[key], value[key], key);
+    return '<li class="' + (errors.length ? "bad" : "ok") + '">' + esc(key) + (errors.length ? " — " + esc(errors[0]) : "") + "</li>";
+  });
+  if (schema.additionalProperties === false) {
+    for (const key of Object.keys(value)) {
+      if (!Object.prototype.hasOwnProperty.call(schema.properties, key)) rows.push('<li class="bad">extra ' + esc(key) + "</li>");
+    }
+  }
+  return '<ul class="checks">' + rows.join("") + "</ul>";
+}
+function maskHtml(step) {
+  if (!step || !step.props.length) return "<p>The constrained document is finished. Further tokens on the right are the unconstrained draft running on alone.</p>";
+  const raw = softmax(step.props.map((item) => item.logit));
+  const allowedLogits = step.props.map((item) => item.ok ? item.logit : -1e9);
+  const after = softmax(allowedLogits);
+  const pick = step.cPick ? step.cPick.text : "";
+  return '<div class="mask">' + step.props.map((item, index) => {
+    const cls = !item.ok ? "blocked" : item.text === pick ? "pick" : "";
+    const afterText = item.ok ? Math.round(after[index] * 100) + "% after mask" : "masked";
+    return '<div class="mask-row ' + cls + '"><code class="token">' + esc(item.text) + '</code><div class="track"><div class="fill" style="width:' + Math.round(raw[index] * 100) + '%"></div></div><span>' + afterText + "</span>" +
+      (!item.ok && item.reason ? '<div class="why">' + esc(item.reason) + "</div>" : "") + "</div>";
+  }).join("") + "</div>";
+}
+function render() {
+  const item = scenario();
+  const traced = run();
+  const steps = traced.steps;
+  state.cursor = Math.max(0, Math.min(state.cursor, steps.length));
+  const written = textsAt(steps, state.cursor);
+  const upcoming = state.cursor < steps.length ? steps[state.cursor] : null;
+  const left = judge(item.schema, written.c);
+  const right = judge(item.schema, written.u);
+  const last = state.cursor ? steps[state.cursor - 1] : null;
+  const rightBad = last && last.uPick && last.cPick && last.uPick.text !== last.cPick.text;
+  document.getElementById("view").innerHTML =
+    '<section class="card"><h2>' + esc(item.title) + '</h2><p class="meta">' + esc(item.lesson) + '</p><div class="source">' + esc(item.source) + "</div></section>" +
+    '<section class="card"><h2>Token ' + state.cursor + " of " + steps.length + '</h2><div class="pair">' +
+      '<div class="pane"><h3>Schema mask on</h3><pre class="tape">' + paint(written.c, written.cTok, false) + '</pre><p class="status ' + statusClass(left) + '">' + esc(left.message) + "</p>" + checklist(item.schema, written.c) + "</div>" +
+      '<div class="pane"><h3>No mask</h3><pre class="tape">' + paint(written.u, written.uTok, rightBad) + '</pre><p class="status ' + (right.state === "valid" ? "valid" : right.state === "partial" ? "partial" : "schema") + '">' + esc(right.message) + (right.json ? " JSON parser: " + esc(right.json) : "") + "</p>" + checklist(item.schema, written.u) + "</div>" +
+    "</div></section>" +
+    '<section class="card"><h2>' + (upcoming && upcoming.cPick ? "Next-token mask" : upcoming ? "Constrained draft is finished" : "Decoding finished") + "</h2>" +
+      (upcoming && upcoming.cPick ? '<p class="meta">The constrained decoder takes <code>' + esc(upcoming.cPick.text) + "</code>" + (upcoming.uPick && upcoming.uPick.text !== upcoming.cPick.text ? ', and the unmasked draft takes <code>' + esc(upcoming.uPick.text) + "</code>." : ". The unmasked draft agrees on this step.") + "</p>" : "") +
+      (upcoming && upcoming.cPick ? maskHtml(upcoming) : upcoming && upcoming.uPick ? "<p>The constrained document is finished. The unmasked draft still writes <code>" + esc(upcoming.uPick.text) + "</code>, which the grammar would have blocked.</p>" : "<p>Both drafts have stopped.</p>") +
+      (traced.error ? '<p class="status impossible">' + esc(traced.error) + "</p>" : "") +
+    "</section>" +
+    '<section class="card"><h2>Schema</h2><pre class="schema">' + esc(JSON.stringify(item.schema, null, 2)) + "</pre></section>";
+  document.getElementById("lesson").textContent = item.lesson;
+  const scrub = document.getElementById("scrub");
+  scrub.max = String(steps.length);
+  scrub.value = String(state.cursor);
+  document.getElementById("pos-out").textContent = state.cursor + " / " + steps.length;
+  document.querySelectorAll("#presets button").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.scenario === state.id ? "true" : "false");
+  });
+  document.getElementById("play").textContent = timer ? "Pause" : "Play";
+}
+function stop() { if (timer) { clearInterval(timer); timer = 0; } }
+function boot() {
+  document.getElementById("presets").innerHTML = SCENARIOS.map((item) => '<button type="button" data-scenario="' + item.id + '">' + item.label + "</button>").join("");
+  document.getElementById("presets").addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    stop();
+    state.id = button.dataset.scenario;
+    state.cursor = 0;
+    render();
+  });
+  document.getElementById("step").addEventListener("click", () => {
+    stop();
+    const traced = run();
+    if (state.cursor < traced.steps.length) state.cursor += 1;
+    render();
+  });
+  document.getElementById("back").addEventListener("click", () => { stop(); state.cursor = Math.max(0, state.cursor - 1); render(); });
+  document.getElementById("reset").addEventListener("click", () => { stop(); state.cursor = 0; render(); });
+  document.getElementById("play").addEventListener("click", () => {
+    if (timer) { stop(); render(); return; }
+    timer = setInterval(() => {
+      const traced = run();
+      if (state.cursor >= traced.steps.length) { stop(); render(); return; }
+      state.cursor += 1;
+      render();
+    }, 650);
+    render();
+  });
+  document.getElementById("scrub").addEventListener("input", (event) => {
+    stop();
+    state.cursor = Number(event.target.value);
+    render();
+  });
+  render();
+}
+globalThis.__structured = { simulate, assess, judge, schemaErrors, SCENARIOS, ticketSchema, invoiceSchema };
+if (typeof document !== "undefined") boot();
+</script>
+</body>
+</html>

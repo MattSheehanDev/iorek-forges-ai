@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nestor — nested sparsity, a toy block</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231e2a32' width='32' height='32'/%3E%3Cpath d='M6 8h6v16H6zm14 0h6v16h-6z' fill='%23e7c07a'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --paper: #f3ecdf;
+    --card: #fffdf8;
+    --ink: #1c1915;
+    --muted: #5e574c;
+    --line: #e3d7c4;
+    --line-strong: #cbbba3;
+    --copper: #b85c38;
+    --header: #1e2a32;
+    --header-2: #31414c;
+    --good: #1d6b45;
+    --shadow: 0 1px 0 rgba(28, 25, 21, 0.04);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(circle at 12% -10%, rgba(184, 92, 56, 0.08), transparent 42%),
+      linear-gradient(180deg, #f7f1e6 0%, var(--paper) 220px);
+    color: var(--ink);
+    font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  h1, h2, h3 { font-family: Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif; font-weight: 600; letter-spacing: -0.02em; }
+  h1 { font-size: 2.1rem; line-height: 1.05; margin: 0; }
+  h2 { font-size: 1.25rem; margin: 0 0 0.35rem; }
+  h3 { font-size: 1rem; margin: 0 0 0.35rem; }
+  p { margin: 0.35rem 0; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; }
+  header.top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 18px; }
+  .eyebrow { color: var(--copper); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+  .toy-flag {
+    background: var(--header);
+    color: #f4ead7;
+    border-radius: 14px;
+    padding: 12px 14px;
+    max-width: 280px;
+    font-size: 0.86rem;
+  }
+  .toy-flag strong { color: #f0d7a2; }
+  .lede { max-width: 760px; color: var(--muted); margin-bottom: 18px; }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  aside {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+  }
+  .presets, .schedule { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+  .presets button, .schedule button, .layer-tabs button, .step button {
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 0.82rem;
+  }
+  .presets button[aria-pressed="true"], .schedule button[aria-pressed="true"], .layer-tabs button[aria-pressed="true"] {
+    background: var(--header);
+    color: #f6efe3;
+    border-color: var(--header);
+  }
+  .control { margin: 0 0 10px; }
+  .control label { display: flex; justify-content: space-between; gap: 8px; font-size: 0.86rem; font-weight: 650; }
+  .control label span { color: var(--muted); font-weight: 500; }
+  .control input[type="range"] { width: 100%; accent-color: var(--copper); }
+  .seed-row { display: flex; gap: 8px; }
+  .seed-row input { width: 100%; border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 8px; background: #fff; }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 0.86rem; margin-top: 4px; }
+  .hint { color: var(--muted); font-size: 0.78rem; margin: 4px 0 0; }
+  main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px 16px;
+    box-shadow: var(--shadow);
+  }
+  .banner {
+    border-left: 4px solid var(--copper);
+    padding: 2px 0 2px 12px;
+    margin-bottom: 12px;
+  }
+  .banner[data-mode="dense"] { border-color: var(--good); }
+  .banner[data-mode="moe"] { border-color: #2a5596; }
+  .banner p { color: var(--muted); }
+  .tokens { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+  .token {
+    text-align: left;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    border-radius: 12px;
+    padding: 8px 6px 6px;
+    min-width: 0;
+  }
+  .token-hit { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 0; }
+  .token strong { display: block; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .token em { display: block; font-style: normal; color: var(--muted); font-size: 0.72rem; }
+  .token.selected { border-color: var(--ink); background: #fff8ee; box-shadow: inset 0 0 0 1px var(--ink); }
+  .pills { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+  .pill {
+    border: 0;
+    border-radius: 999px;
+    padding: 1px 6px;
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+  .lanes { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .lane { display: grid; grid-template-columns: 118px 1fr; gap: 6px; align-items: center; }
+  .lane-name {
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0;
+    white-space: nowrap;
+  }
+  .slots { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+  .slot {
+    height: 22px;
+    border-radius: 6px;
+    border: 1px dashed var(--line-strong);
+    background: transparent;
+    padding: 0;
+  }
+  .slot.on { border-style: solid; }
+  .slot.selected { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 14px; color: var(--muted); font-size: 0.78rem; margin-top: 8px; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .mask-wrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+  .mask-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: #fff; }
+  .mask-card.feature { border-color: var(--ink); }
+  .mask-card h3 { font-family: "Segoe UI", sans-serif; font-size: 0.78rem; font-weight: 700; }
+  .mask {
+    display: grid;
+    grid-template-columns: 18px repeat(8, 18px);
+    gap: 2px;
+    margin-top: 6px;
+  }
+  .mask b, .mask i { font-style: normal; font-weight: 600; font-size: 0.62rem; color: var(--muted); display: grid; place-items: center; }
+  .cell { width: 18px; height: 18px; border-radius: 3px; border: 0; padding: 0; background: #f6f1e8; }
+  .cell:hover, .slot:hover, .pill:hover { outline: 1px solid var(--ink); outline-offset: 1px; }
+  .cell.future { background: repeating-linear-gradient(-45deg, #f6f1e8, #f6f1e8 2px, #efe6d6 2px, #efe6d6 4px); }
+  .cell.blocked { background: #fff; box-shadow: inset 0 0 0 1px #e4d8c6; }
+  .cell.on { background: var(--cell, var(--ink)); }
+  .cell.query { box-shadow: inset 0 0 0 2px var(--ink); }
+  .axis-note { color: var(--muted); font-size: 0.78rem; }
+  .grid-scroll { overflow-x: auto; }
+  table.experts { border-collapse: separate; border-spacing: 3px; font-size: 0.75rem; }
+  table.experts th { font-weight: 600; color: var(--muted); }
+  table.experts td, table.experts th { text-align: center; min-width: 34px; }
+  table.experts td { height: 28px; border-radius: 6px; background: #f6f1e8; }
+  table.experts td.on { color: white; font-weight: 700; }
+  table.experts td.idle { color: #b3a894; }
+  .row-label { text-align: left !important; white-space: nowrap; padding-right: 6px; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .stat {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px;
+  }
+  .stat .num { font-family: Palatino, Georgia, serif; font-size: 1.7rem; line-height: 1; margin: 4px 0; }
+  .stat .sub { color: var(--muted); font-size: 0.78rem; }
+  .bars { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .bar-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; align-items: center; font-size: 0.78rem; }
+  .track { height: 12px; background: #f0e6d6; border-radius: 99px; overflow: hidden; position: relative; }
+  .fill { height: 100%; border-radius: 99px; }
+  .fill.stored { background: #d9c7aa; }
+  .fill.used { background: var(--header); position: absolute; left: 0; top: 0; }
+  details { margin-top: 8px; color: var(--muted); font-size: 0.84rem; }
+  details summary { cursor: pointer; color: var(--ink); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.84em; }
+  .steps { margin: 8px 0 0; padding-left: 1.1rem; color: var(--muted); }
+  footer { margin-top: 8px; color: var(--muted); font-size: 0.82rem; }
+  footer a { color: var(--copper); }
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { position: static; }
+    .stats { grid-template-columns: 1fr; }
+    header.top { flex-direction: column; align-items: stretch; }
+    .toy-flag { max-width: none; }
+  }
+  @media (max-width: 720px) {
+    .tokens { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    h1 { font-size: 1.7rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Daily demo · 2 Nov 2026</div>
+      <h1>Nestor, one block at a time</h1>
+    </div>
+    <div class="toy-flag"><strong>Toy illustration.</strong> The routers are small random vectors from the seed. This is not a trained Nestor checkpoint.</div>
+  </header>
+  <p class="lede">In a usual mixture-of-experts transformer, each token picks a few expert MLPs and attention stays dense. Nestor does the same thing to attention. A block has C columns. A router, run once at the block input, sends each token to Kc of them, and the token only attends to other tokens in those columns. Each column then has its own experts.</p>
+  <div class="layout">
+    <aside>
+      <h2>Controls</h2>
+      <div class="presets" id="presets">
+        <button type="button" data-preset="nestor">Nestor, early block</button>
+        <button type="button" data-preset="last">Nestor, last block</button>
+        <button type="button" data-preset="moe">Plain MoE</button>
+        <button type="button" data-preset="dense">Dense</button>
+      </div>
+      <div class="control">
+        <label for="c-range">Columns C <span id="c-out"></span></label>
+        <input id="c-range" type="range" min="1" max="8" value="8">
+      </div>
+      <div class="control">
+        <label for="kc-range">Columns per token Kc <span id="kc-out"></span></label>
+        <input id="kc-range" type="range" min="1" max="8" value="3">
+      </div>
+      <div class="control">
+        <label for="e-range">Experts per column E <span id="e-out"></span></label>
+        <input id="e-range" type="range" min="1" max="8" value="8">
+      </div>
+      <div class="control">
+        <label for="ke-range">Experts picked Ke <span id="ke-out"></span></label>
+        <input id="ke-range" type="range" min="1" max="8" value="2">
+      </div>
+      <div class="control">
+        <label for="m-range">Layers in the block M <span id="m-out"></span></label>
+        <input id="m-range" type="range" min="1" max="4" value="2">
+      </div>
+      <div class="control">
+        <label for="seed">Seed <span>same routers every reload</span></label>
+        <div class="seed-row">
+          <input id="seed" type="number" min="0" max="999999" value="154" autocomplete="off">
+          <button type="button" id="reshuffle">Reshuffle</button>
+        </div>
+      </div>
+      <label class="check"><input id="shared" type="checkbox" checked> Tied experts, shared by every column. This toy stores 2 and uses 1.</label>
+      <p class="hint">The paper's tied bank is larger: Es = 8 stored, Ks = 2 used.</p>
+      <p class="hint">Kc cannot exceed C, and Ke cannot exceed E. C = 1 is a plain MoE. C = 1 and E = 1 is a dense transformer.</p>
+      <h3 style="margin-top:14px">Paper schedule</h3>
+      <p class="hint">In the trained models every block has C = 8, and Kc grows with depth. Click a block to load that Kc.</p>
+      <div class="schedule" id="schedule">
+        <button type="button" data-kc="3">B1 · 3</button>
+        <button type="button" data-kc="4">B2 · 4</button>
+        <button type="button" data-kc="5">B3 · 5</button>
+        <button type="button" data-kc="6">B4 · 6</button>
+        <button type="button" data-kc="6">B5 · 6</button>
+        <button type="button" data-kc="7">B6 · 7</button>
+        <button type="button" data-kc="8">B7 · 8</button>
+      </div>
+    </aside>
+    <main id="view"></main>
+  </div>
+  <footer>
+    Schematic counters only. Sources and the mapping to the paper are in the folder README.
+  </footer>
+</div>
+<script>
+"use strict";
+const TOKENS = ["Nested", "sparsity", "routes", "each", "token", "into", "few", "columns"];
+const DIM = 8;
+const ES_ON = 2;
+const KS_ON = 1;
+const COLORS = [
+  { bg: "#0E6E6B", fg: "#fff" },
+  { bg: "#C2511A", fg: "#fff" },
+  { bg: "#2A5596", fg: "#fff" },
+  { bg: "#8C6A10", fg: "#fff" },
+  { bg: "#5C4D8A", fg: "#fff" },
+  { bg: "#1F7A42", fg: "#fff" },
+  { bg: "#A33B58", fg: "#fff" },
+  { bg: "#2F5D68", fg: "#fff" }
+];
+const PRESETS = {
+  nestor: { C: 8, Kc: 3, E: 8, Ke: 2, M: 2, shared: true },
+  last: { C: 8, Kc: 8, E: 8, Ke: 2, M: 2, shared: true },
+  moe: { C: 1, Kc: 1, E: 8, Ke: 2, M: 2, shared: false },
+  dense: { C: 1, Kc: 1, E: 1, Ke: 1, M: 2, shared: false }
+};
+const state = { C: 8, Kc: 3, E: 8, Ke: 2, M: 2, seed: 154, shared: true, token: 7, layer: 0, focusCol: null };
+
+function clamp(value, lo, hi) {
+  return Math.max(lo, Math.min(hi, value));
+}
+function imul(a, b) {
+  const out = Math.imul(a | 0, b | 0);
+  return out >>> 0;
+}
+function mix(seed, parts) {
+  let h = seed >>> 0;
+  for (const part of parts) h = imul(h ^ (part >>> 0), 0x9E3779B1);
+  return h;
+}
+function mulberry32(seed) {
+  let stateWord = seed >>> 0;
+  return function () {
+    stateWord = (stateWord + 0x6D2B79F5) >>> 0;
+    let t = imul(stateWord ^ (stateWord >>> 15), stateWord | 1);
+    const mixed = imul(t ^ (t >>> 7), t | 61);
+    t = (t ^ ((t + mixed) >>> 0)) >>> 0;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function unitVector(seed) {
+  const rng = mulberry32(seed);
+  const values = [];
+  let sum = 0;
+  for (let i = 0; i < DIM; i++) {
+    const value = rng() * 2 - 1;
+    values.push(value);
+    sum += value * value;
+  }
+  const norm = Math.sqrt(sum);
+  return values.map((value) => value / norm);
+}
+function dot(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += a[i] * b[i];
+  return sum;
+}
+function topk(scores, k) {
+  return scores.map((_, index) => index).sort((i, j) => (scores[j] - scores[i]) || (i - j)).slice(0, k);
+}
+function softmax(values) {
+  const peak = Math.max(...values);
+  const exps = values.map((value) => Math.exp(value - peak));
+  const total = exps.reduce((a, b) => a + b, 0);
+  return exps.map((value) => value / total);
+}
+function route(cfg) {
+  const es = cfg.shared ? ES_ON : 0;
+  const ks = cfg.shared ? KS_ON : 0;
+  const members = Array.from({ length: cfg.C }, () => []);
+  const tokens = [];
+  for (let tokenIndex = 0; tokenIndex < TOKENS.length; tokenIndex++) {
+    const embed = unitVector(mix(cfg.seed, [1, tokenIndex]));
+    const columnScores = [];
+    for (let column = 0; column < cfg.C; column++) {
+      columnScores.push(dot(embed, unitVector(mix(cfg.seed, [2, column]))));
+    }
+    const chosen = topk(columnScores, cfg.Kc);
+    const columnGates = softmax(chosen.map((index) => columnScores[index]));
+    const assignment = chosen.map((index, n) => ({ index, score: columnScores[index], gate: columnGates[n] }));
+    for (const column of assignment) members[column.index].push(tokenIndex);
+    const layers = [];
+    const byIndex = [...assignment].sort((a, b) => a.index - b.index);
+    for (let layer = 0; layer < cfg.M; layer++) {
+      const experts = byIndex.map((column) => {
+        const scores = [];
+        for (let expert = 0; expert < cfg.E; expert++) {
+          scores.push(dot(embed, unitVector(mix(cfg.seed, [3, layer, column.index, expert]))));
+        }
+        const picked = topk(scores, cfg.Ke);
+        const allGates = softmax(scores);
+        return {
+          column: column.index,
+          chosen: picked.map((expert) => ({ index: expert, score: scores[expert], gate: allGates[expert] }))
+        };
+      });
+      let shared = [];
+      if (ks) {
+        const scores = [];
+        for (let expert = 0; expert < es; expert++) {
+          scores.push(dot(embed, unitVector(mix(cfg.seed, [4, layer, expert]))));
+        }
+        const picked = topk(scores, ks);
+        const gates = softmax(picked.map((expert) => scores[expert]));
+        shared = picked.map((expert, n) => ({ index: expert, score: scores[expert], gate: gates[n] }));
+      }
+      layers.push({ experts, shared });
+    }
+    tokens.push({
+      index: tokenIndex,
+      columns: byIndex,
+      columnsByGate: [...assignment].sort((a, b) => b.gate - a.gate || a.index - b.index),
+      layers
+    });
+  }
+  return { tokens, members, Es: es, Ks: ks };
+}
+function causalPairs(count) {
+  return count * (count + 1) / 2;
+}
+function widthUnits(columns, kColumns, experts, kExperts, layers, shared) {
+  const es = shared ? ES_ON : 0;
+  const ks = shared ? KS_ON : 0;
+  const attention = columns / kColumns;
+  const expert = shared
+    ? (columns * experts) / (2 * kColumns * kExperts) + es / (2 * ks)
+    : (columns * experts) / (kColumns * kExperts);
+  return { stored: layers * (attention + expert), used: layers * 2 };
+}
+function metrics(cfg, routed) {
+  const sequence = TOKENS.length;
+  const densePairs = causalPairs(sequence);
+  const perColumn = routed.members.map((members) => causalPairs(members.length));
+  const scored = perColumn.reduce((a, b) => a + b, 0);
+  const es = cfg.shared ? ES_ON : 0;
+  const ks = cfg.shared ? KS_ON : 0;
+  const width = widthUnits(cfg.C, cfg.Kc, cfg.E, cfg.Ke, cfg.M, cfg.shared);
+  const moe = widthUnits(1, 1, cfg.E, cfg.Ke, cfg.M, false);
+  const dense = widthUnits(1, 1, 1, 1, cfg.M, false);
+  return {
+    attnStored: cfg.M * cfg.C,
+    attnUsed: cfg.M * cfg.Kc,
+    expertStored: cfg.M * (cfg.C * cfg.E + es),
+    expertUsed: cfg.M * (cfg.Kc * cfg.Ke + ks),
+    storedModules: cfg.M * (cfg.C + cfg.C * cfg.E + es),
+    usedModules: cfg.M * (cfg.Kc + cfg.Kc * cfg.Ke + ks),
+    storedWeights: width.stored,
+    usedWeights: width.used,
+    moeStored: moe.stored,
+    moeUsed: moe.used,
+    denseStored: dense.stored,
+    denseUsed: dense.used,
+    scored,
+    densePairs,
+    perColumn,
+    headAdjusted: scored / (cfg.Kc * densePairs),
+    balanced: cfg.Kc / cfg.C
+  };
+}
+function modeOf(cfg) {
+  if (cfg.C === 1 && cfg.E === 1 && !cfg.shared) {
+    return { id: "dense", title: "Dense transformer", text: "C = 1 and E = 1, with the tied bank off. One column, one expert, and a full causal mask. Every stored module is used." };
+  }
+  if (cfg.C === 1 && !cfg.shared) {
+    return { id: "moe", title: "Plain MoE", text: "C = 1 recovers an ordinary MoE transformer: attention is one dense causal map, and each token still picks Ke of the E experts." };
+  }
+  if (cfg.C === 1) {
+    return { id: "moe", title: "One column, plus a tied bank", text: "C = 1 leaves a single attention operator. The tied experts are still on, so this is a one-column model with a shared bank, not the plain MoE baseline." };
+  }
+  if (cfg.Kc === cfg.C) {
+    return { id: "full", title: "Every column is active", text: "Kc = C, so every token sits in every column and each mask is the full causal triangle. The paper's last block does this. Earlier blocks use a smaller Kc." };
+  }
+  return { id: "nestor", title: "Nested sparsity", text: "The column router picks Kc columns. Inside each of those, the column's own router picks Ke experts. A token attends only to tokens that share a column with it." };
+}
+function fmt(value, digits) {
+  if (!Number.isFinite(value)) return "—";
+  const rounded = Math.round(value * 10 ** digits) / 10 ** digits;
+  return rounded.toFixed(digits);
+}
+function pct(value) {
+  return fmt(value * 100, 0) + "%";
+}
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+function color(index) {
+  return COLORS[index % COLORS.length];
+}
+function render() {
+  const cfg = state;
+  const routed = route(cfg);
+  const count = metrics(cfg, routed);
+  const mode = modeOf(cfg);
+  const token = routed.tokens[cfg.token];
+  const focus = cfg.focusCol == null ? token.columnsByGate[0].index : cfg.focusCol;
+  const view = document.getElementById("view");
+  const active = document.activeElement;
+  view.innerHTML = template(cfg, routed, count, mode, token, focus);
+  restoreFocus(view, active);
+  syncControls(cfg);
+  window.__nestor.last = { cfg: { ...cfg }, routed, count };
+}
+function restoreFocus(view, el) {
+  if (!el || !el.classList) return;
+  let next = null;
+  if (el.classList.contains("token-hit")) next = view.querySelector(`.token-hit[data-token="${el.dataset.token}"]`);
+  else if (el.dataset && el.dataset.layer != null) next = view.querySelector(`#layers [data-layer="${el.dataset.layer}"]`);
+  if (next) next.focus();
+}
+function template(cfg, routed, count, mode, token, focus) {
+  const tokenCards = routed.tokens.map((item) => {
+    const pills = item.columnsByGate.map((column) => {
+      const paint = color(column.index);
+      return `<button type="button" class="pill" data-token="${item.index}" data-column="${column.index}" style="background:${paint.bg};color:${paint.fg}" title="Column ${column.index + 1}, gate ${fmt(column.gate, 2)}">C${column.index + 1} ${fmt(column.gate, 2)}</button>`;
+    }).join("");
+    return `<div class="token${item.index === cfg.token ? " selected" : ""}"><button type="button" class="token-hit" data-token="${item.index}"><em>${item.index + 1}</em><strong>${esc(TOKENS[item.index])}</strong></button><span class="pills">${pills}</span></div>`;
+  }).join("");
+  const lanes = routed.members.map((members, column) => {
+    const paint = color(column);
+    const present = new Set(members);
+    const slots = TOKENS.map((_, index) => {
+      const on = present.has(index);
+      const title = on ? `${TOKENS[index]} is in column ${column + 1}` : `${TOKENS[index]} is not in column ${column + 1}`;
+      return `<button type="button" class="slot${on ? " on" : ""}${index === cfg.token ? " selected" : ""}" data-token="${index}" data-column="${column}" style="${on ? `background:${paint.bg}` : ""}" title="${esc(title)}" aria-label="${esc(title)}"></button>`;
+    }).join("");
+    return `<div class="lane"><button type="button" class="lane-name" data-column="${column}" style="color:${paint.bg}">Column ${column + 1} · ${members.length}</button><div class="slots">${slots}</div></div>`;
+  }).join("");
+  const masks = [`<div class="mask-card${focus === -1 ? " feature" : ""}"><h3>Dense causal · ${count.densePairs} pairs</h3>${maskHtml(-1, null, cfg.token)}</div>`]
+    .concat(routed.members.map((members, column) => {
+      const paint = color(column);
+      return `<div class="mask-card${column === focus ? " feature" : ""}"><h3 style="color:${paint.bg}">Column ${column + 1} · ${count.perColumn[column]} pairs</h3>${maskHtml(column, new Set(members), cfg.token, paint.bg)}</div>`;
+    })).join("");
+  const layer = token.layers[cfg.layer];
+  const expertTable = expertHtml(cfg, token, layer);
+  const visible = new Set();
+  token.columns.forEach((column) => {
+    routed.members[column.index].forEach((index) => {
+      if (index <= token.index) visible.add(index);
+    });
+  });
+  const visibleWords = [...visible].sort((a, b) => a - b).map((index) => TOKENS[index]).join(", ");
+  const queryPairs = token.columns.reduce((sum, column) => sum + routed.members[column.index].filter((index) => index <= token.index).length, 0);
+  const pairWord = (count) => count === 1 ? "pair" : "pairs";
+  const emptyColumns = routed.members.map((members, index) => members.length === 0 ? index + 1 : null).filter((index) => index != null);
+  const emptyList = emptyColumns.length < 2 ? emptyColumns.join("")
+    : emptyColumns.length === 2 ? emptyColumns.join(" and ")
+    : `${emptyColumns.slice(0, -1).join(", ")}, and ${emptyColumns[emptyColumns.length - 1]}`;
+  const emptyNote = emptyColumns.length
+    ? `<p class="axis-note">${emptyColumns.length === 1 ? "Column" : "Columns"} ${emptyList} got no tokens at this seed. The toy router has no load-balancing bias. The paper updates one after every step so the columns stay even. Reshuffle draws another assignment.</p>`
+    : "";
+  const activeFraction = count.storedModules === 0 ? 0 : count.usedModules / count.storedModules;
+  const maxStored = Math.max(count.storedWeights, count.moeStored, count.denseStored);
+  return `
+    <section class="card">
+      <div class="banner" data-mode="${mode.id}" id="mode-banner">
+        <h2 id="mode-title">${esc(mode.title)}</h2>
+        <p>${esc(mode.text)}</p>
+      </div>
+      <div class="tokens" id="token-strip">${tokenCards}</div>
+      <div class="lanes" id="lanes">${lanes}</div>
+      ${emptyNote}
+      <div class="legend">
+        <span><i class="swatch" style="background:#1c1915"></i>Filled slot: the token was routed here.</span>
+        <span>Pills are that token's columns, largest gate first. The gates are a softmax over the picked columns, so they sum to 1.</span>
+      </div>
+    </section>
+    <section class="card" id="masks">
+      <h2>Who can attend to whom</h2>
+      <p class="axis-note">Rows are queries, columns are keys, both in token order. A filled cell is a causal pair inside that column. A hollow cell is causal too, but the query or the key was routed to a different column. Hatched cells are the future. The same membership is reused for all ${cfg.M} layer${cfg.M > 1 ? "s" : ""} of the block. Click a column name to feature its mask.</p>
+      <div class="mask-wrap">${masks}</div>
+      <p id="visible-line"><strong>${esc(TOKENS[token.index])}</strong> can read ${visible.size} of ${token.index + 1} tokens up to itself. A dense map would score ${token.index + 1} ${pairWord(token.index + 1)} for this query; its columns score ${queryPairs} ${pairWord(queryPairs)}. Visible context: ${esc(visibleWords)}.</p>
+    </section>
+    <section class="card">
+      <h2>Experts for “${esc(TOKENS[token.index])}”</h2>
+      <p class="axis-note">Columns stay fixed across layers. Expert routers run again each layer. Column-expert gates are a softmax over all ${cfg.E} experts in that column, so the lit cells need not sum to 1. Shared-expert gates are a softmax over the experts that were picked.</p>
+      <div class="layer-tabs" id="layers">${token.layers.map((_, index) => `<button type="button" data-layer="${index}" aria-pressed="${index === cfg.layer}">Layer ${index + 1}</button>`).join("")}</div>
+      <div class="grid-scroll" id="expert-grid">${expertTable}</div>
+    </section>
+    <section class="card" id="counters">
+      <h2>Stored, used, and how dense the map is</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="sub">Modules stored in the block</div>
+          <div class="num" id="stored-modules">${count.storedModules}</div>
+          <div class="sub">${count.attnStored} attention + ${count.expertStored} expert</div>
+        </div>
+        <div class="stat">
+          <div class="sub">Modules used by one token</div>
+          <div class="num" id="used-modules">${count.usedModules}</div>
+          <div class="sub">${count.attnUsed} attention + ${count.expertUsed} expert · ${pct(activeFraction)} of stored</div>
+        </div>
+        <div class="stat">
+          <div class="sub">Attention pairs scored</div>
+          <div class="num" id="attn-scored">${count.scored}</div>
+          <div class="sub" id="attn-dense">Dense and plain MoE score ${count.densePairs}. This map is ${fmt(count.scored / count.densePairs, 2)}× that.</div>
+        </div>
+      </div>
+      <div class="bars" id="weight-bars">
+        ${bar("This block", count.storedWeights, count.usedWeights, maxStored)}
+        ${bar("Plain MoE", count.moeStored, count.moeUsed, maxStored)}
+        ${bar("Dense", count.denseStored, count.denseUsed, maxStored)}
+      </div>
+      <p class="axis-note" id="attn-head">Head-adjusted quadratic factor ${fmt(count.headAdjusted, 2)}× one dense map. The paper's balanced-routing estimate is Kc/C = ${fmt(count.balanced, 2)}. Plain MoE attention stays at 1×, because the map is dense.</p>
+      <details>
+        <summary>What these counters count</summary>
+        <p>Module counts treat every attention block and every expert as one stored object, repeated for each of the M layers. That matches the grid: the block stores C attentions and C×E column experts, plus Es tied experts if the bank is on. A token uses Kc attentions and Kc×Ke column experts, plus Ks tied experts.</p>
+        <p>The bars use the paper's width rule, in units where one dense layer is 2 (its attention projections plus one MLP of width 4D). Each column gets 1/Kc of the heads, so a token's Kc columns still have one dense attention of projections. With the tied bank on, column experts and shared experts each supply half of the active MLP. With the bank off, the column experts supply all of it. Active width then matches dense and plain MoE; storage grows with C/Kc and with E/Ke. Routers are omitted. None of these numbers are the trained models' parameter counts.</p>
+        <p>Attention pairs are membership, not learned weights. Summed over columns they can exceed one dense map, because a token can sit in several columns. Dividing by Kc is the head adjustment above. Equation (19) in the paper is the balanced case of that adjustment, Kc/C.</p>
+      </details>
+    </section>`;
+}
+function bar(label, stored, used, maxStored) {
+  const storedPct = maxStored === 0 ? 0 : 100 * stored / maxStored;
+  const usedPct = maxStored === 0 ? 0 : 100 * used / maxStored;
+  return `<div class="bar-row"><span>${esc(label)}</span><div class="track" title="Stored ${fmt(stored, 2)}, used per token ${fmt(used, 2)}"><div class="fill stored" style="width:${storedPct}%"></div><div class="fill used" style="width:${usedPct}%"></div></div><span>${fmt(used, 2)} / ${fmt(stored, 2)}</span></div>`;
+}
+function maskHtml(column, members, query, paint) {
+  let html = `<div class="mask" aria-hidden="true"><b></b>${TOKENS.map((_, index) => `<i>${index + 1}</i>`).join("")}`;
+  for (let q = 0; q < TOKENS.length; q++) {
+    html += `<i>${q + 1}</i>`;
+    for (let k = 0; k < TOKENS.length; k++) {
+      const future = k > q;
+      const allowed = !future && (column < 0 || (members.has(q) && members.has(k)));
+      const blocked = !future && !allowed;
+      const cls = ["cell", allowed ? "on" : "", future ? "future" : "", blocked ? "blocked" : "", q === query ? "query" : ""].filter(Boolean).join(" ");
+      const style = allowed && paint ? ` style="--cell:${paint}"` : "";
+      const relation = future ? "future" : allowed ? "attends" : "different column";
+      const columnAttr = column >= 0 ? ` data-column="${column}"` : "";
+      html += `<button type="button" tabindex="-1" class="${cls}"${style} data-token="${q}"${columnAttr} title="${esc(TOKENS[q])} → ${esc(TOKENS[k])}: ${relation}"></button>`;
+    }
+  }
+  html += "</div>";
+  return html;
+}
+function expertHtml(cfg, token, layer) {
+  const header = `<tr><th></th>${Array.from({ length: cfg.E }, (_, index) => `<th>e${index + 1}</th>`).join("")}</tr>`;
+  const active = new Set(token.columns.map((column) => column.index));
+  const rows = [];
+  for (let column = 0; column < cfg.C; column++) {
+    const paint = color(column);
+    if (!active.has(column)) {
+      rows.push(`<tr><th class="row-label" style="color:${paint.bg}">C${column + 1} idle</th><td class="idle" colspan="${cfg.E}">not routed, experts unused for this token</td></tr>`);
+      continue;
+    }
+    const row = layer.experts.find((item) => item.column === column);
+    const chosen = new Map(row.chosen.map((item) => [item.index, item.gate]));
+    const cells = Array.from({ length: cfg.E }, (_, expert) => {
+      if (!chosen.has(expert)) return `<td title="Column ${column + 1}, expert ${expert + 1}, not selected"></td>`;
+      return `<td class="on" style="background:${paint.bg}" title="gate ${fmt(chosen.get(expert), 3)}">${pct(chosen.get(expert))}</td>`;
+    }).join("");
+    rows.push(`<tr><th class="row-label" style="color:${paint.bg}">C${column + 1}</th>${cells}</tr>`);
+  }
+  let sharedLine = "";
+  if (cfg.shared) {
+    const picked = new Set(layer.shared.map((item) => item.index));
+    const bits = layer.shared.map((item) => `s${item.index + 1} (${pct(item.gate)})`).join(", ");
+    const idle = [];
+    for (let expert = 0; expert < ES_ON; expert++) if (!picked.has(expert)) idle.push(`s${expert + 1}`);
+    sharedLine = `<p class="axis-note" id="shared-line">Tied bank, the same experts in every column: ${bits}${idle.length ? `. Idle: ${idle.join(", ")}` : ""}.</p>`;
+  }
+  return `<table class="experts">${header}${rows.join("")}</table>${sharedLine}`;
+}
+function onViewClick(event) {
+  const view = document.getElementById("view");
+  const target = event.target instanceof Element ? event.target : event.target.parentElement;
+  if (!target) return;
+  const layerBtn = target.closest("[data-layer]");
+  if (layerBtn && view.contains(layerBtn)) {
+    state.layer = Number(layerBtn.dataset.layer);
+    render();
+    return;
+  }
+  const lane = target.closest(".lane-name");
+  if (lane && view.contains(lane)) {
+    state.focusCol = Number(lane.dataset.column);
+    render();
+    return;
+  }
+  const tokenNode = target.closest("[data-token]");
+  if (!tokenNode || !view.contains(tokenNode)) return;
+  state.token = Number(tokenNode.dataset.token);
+  if (tokenNode.dataset.column != null) {
+    const column = Number(tokenNode.dataset.column);
+    if (column >= 0) state.focusCol = column;
+  }
+  render();
+}
+function syncControls(cfg) {
+  const c = document.getElementById("c-range");
+  const kc = document.getElementById("kc-range");
+  const e = document.getElementById("e-range");
+  const ke = document.getElementById("ke-range");
+  const m = document.getElementById("m-range");
+  c.value = String(cfg.C);
+  kc.max = String(cfg.C);
+  kc.value = String(cfg.Kc);
+  e.value = String(cfg.E);
+  ke.max = String(cfg.E);
+  ke.value = String(cfg.Ke);
+  m.value = String(cfg.M);
+  document.getElementById("seed").value = String(cfg.seed);
+  document.getElementById("shared").checked = cfg.shared;
+  document.getElementById("c-out").textContent = String(cfg.C);
+  document.getElementById("kc-out").textContent = `${cfg.Kc} of ${cfg.C}`;
+  document.getElementById("e-out").textContent = String(cfg.E);
+  document.getElementById("ke-out").textContent = `${cfg.Ke} of ${cfg.E}`;
+  document.getElementById("m-out").textContent = String(cfg.M);
+  document.querySelectorAll("#presets button").forEach((button) => {
+    const preset = PRESETS[button.dataset.preset];
+    const on = preset.C === cfg.C && preset.Kc === cfg.Kc && preset.E === cfg.E && preset.Ke === cfg.Ke && preset.M === cfg.M && preset.shared === cfg.shared;
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  document.querySelectorAll("#schedule button").forEach((button) => {
+    const on = cfg.C === 8 && cfg.Kc === Number(button.dataset.kc) && button.dataset.kc === String(cfg.Kc);
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+function normalize() {
+  state.C = clamp(Math.round(state.C), 1, 8);
+  state.Kc = clamp(Math.round(state.Kc), 1, state.C);
+  state.E = clamp(Math.round(state.E), 1, 8);
+  state.Ke = clamp(Math.round(state.Ke), 1, state.E);
+  state.M = clamp(Math.round(state.M), 1, 4);
+  state.seed = clamp(Math.round(Number.isFinite(state.seed) ? state.seed : 0), 0, 999999);
+  state.token = clamp(state.token, 0, TOKENS.length - 1);
+  state.layer = clamp(state.layer, 0, state.M - 1);
+  if (state.focusCol != null) state.focusCol = clamp(state.focusCol, 0, state.C - 1);
+}
+function commit(patch) {
+  Object.assign(state, patch);
+  normalize();
+  render();
+}
+function snapshot() {
+  const cfg = state;
+  const routed = route(cfg);
+  const count = metrics(cfg, routed);
+  const roundGate = (value) => Math.round(value * 1e6) / 1e6;
+  return {
+    columns: routed.tokens.map((token) => token.columns.map((column) => column.index)),
+    columnGates: routed.tokens.map((token) => token.columns.map((column) => roundGate(column.gate))),
+    experts: routed.tokens.map((token) => token.layers.map((layer) => layer.experts.map((row) => row.chosen.map((item) => item.index)))),
+    expertColumns: routed.tokens.map((token) => token.layers.map((layer) => layer.experts.map((row) => row.column))),
+    shared: routed.tokens.map((token) => token.layers.map((layer) => layer.shared.map((item) => item.index))),
+    metrics: {
+      storedModules: count.storedModules,
+      usedModules: count.usedModules,
+      storedWeights: roundGate(count.storedWeights),
+      usedWeights: roundGate(count.usedWeights),
+      scoredPairs: count.scored,
+      densePairs: count.densePairs,
+      headAdjusted: roundGate(count.headAdjusted)
+    }
+  };
+}
+document.getElementById("c-range").addEventListener("input", (event) => commit({ C: Number(event.target.value) }));
+document.getElementById("kc-range").addEventListener("input", (event) => commit({ Kc: Number(event.target.value) }));
+document.getElementById("e-range").addEventListener("input", (event) => commit({ E: Number(event.target.value) }));
+document.getElementById("ke-range").addEventListener("input", (event) => commit({ Ke: Number(event.target.value) }));
+document.getElementById("m-range").addEventListener("input", (event) => commit({ M: Number(event.target.value) }));
+document.getElementById("seed").addEventListener("input", (event) => commit({ seed: Number(event.target.value) }));
+document.getElementById("shared").addEventListener("change", (event) => commit({ shared: event.target.checked }));
+document.getElementById("reshuffle").addEventListener("click", () => commit({ seed: state.seed + 1 }));
+document.getElementById("presets").addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  commit(PRESETS[button.dataset.preset]);
+});
+document.getElementById("schedule").addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  commit({ C: 8, Kc: Number(button.dataset.kc) });
+});
+window.__nestor = { state, route, metrics, snapshot, commit, TOKENS };
+document.getElementById("view").addEventListener("click", onViewClick);
+normalize();
+render();
+</script>
+</body>
+</html>

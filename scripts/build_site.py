@@ -236,9 +236,9 @@ def render_index(demos: list[Demo], lede: str) -> str:
   </div>
 </header>
 <section class="hero">
-  <div class="kicker">Daily demos</div>
-  <h1>Demos you can open in the browser</h1>
-  <p class="lede">{html.escape(lede)}</p>
+  <div class="kicker">Something new most mornings</div>
+  <h1>Small experiments with AI</h1>
+  <p class="lede">Each morning I pick one idea from the AI world, a new paper or a habit dev teams are picking up, and build a little page you can play with. Nothing to install. Just open one and click around.</p>
 </section>
 <main class="page">
   <ol class="demo-list">

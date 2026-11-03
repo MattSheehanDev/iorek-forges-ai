@@ -15,6 +15,16 @@ Every new demo must be a static, browser-runnable folder under `demos/` with an 
 ```
 
   Use the tokens in `assets/theme.css` (`--bg`, `--navy`, `--blue`, `--font`) for the page chrome. Do not add a second palette or a copied brand mark.
+- Every demo page must include a visible **Inspired by** section near the bottom of `index.html`. Use the shared `.sources` class from `assets/theme.css`. Take the links from that demo's README **Sources** section, including X posts and the key web sources. If the README has no X posts, list just the web sources.
+
+```html
+<section class="sources">
+  <h2>Inspired by</h2>
+  <ul>
+    <li><a href="https://example.com/paper">Paper title</a></li>
+  </ul>
+</section>
+```
 
 `scripts/build_site.py` rebuilds the landing page from the `demos/` folders. GitHub Actions runs it and deploys with Pages on every push to `master`, so a new folder is listed without editing `index.html` by hand. The repository's Pages source has to be GitHub Actions.
 

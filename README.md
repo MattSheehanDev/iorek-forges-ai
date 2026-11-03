@@ -11,3 +11,4 @@ Daily, self-contained demos of new AI papers and of conventions for coding agent
 ## New demos
 
 Every new demo must be a static, browser-runnable folder under `demos/` with an `index.html` entry point and relative asset paths. The landing page is generated from those folders. See [CONTRIBUTING.md](CONTRIBUTING.md).
+

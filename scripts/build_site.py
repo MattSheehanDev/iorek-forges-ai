@@ -62,6 +62,9 @@ def main() -> int:
     SITE.mkdir(parents=True)
     (SITE / INDEX_NAME).write_text(page, encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
+    assets = ROOT / "assets"
+    if assets.is_dir():
+        shutil.copytree(assets, SITE / "assets")
     for demo in demos:
         shutil.copytree(
             demo.path,
@@ -215,102 +218,39 @@ def render_index(demos: list[Demo], lede: str) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>iorek-forges-ai</title>
 <meta name="description" content="{html.escape(lede, quote=True)}">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231e2a32' width='32' height='32'/%3E%3Cpath d='M6 8h6v16H6zm14 0h6v16h-6z' fill='%23e7c07a'/%3E%3C/svg%3E">
-<style>
-  :root {{
-    --paper: #f3ecdf;
-    --card: #fffdf8;
-    --ink: #1c1915;
-    --muted: #5e574c;
-    --line: #e3d7c4;
-    --line-strong: #cbbba3;
-    --copper: #8d4328;
-    --header: #1e2a32;
-  }}
-  * {{ box-sizing: border-box; }}
-  html, body {{ margin: 0; padding: 0; }}
-  body {{
-    background:
-      radial-gradient(circle at 12% -10%, rgba(184, 92, 56, 0.08), transparent 42%),
-      linear-gradient(180deg, #f7f1e6 0%, var(--paper) 220px);
-    color: var(--ink);
-    font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 17px;
-    line-height: 1.5;
-  }}
-  h1, h2 {{
-    font-family: Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }}
-  a {{ color: inherit; }}
-  .wrap {{ max-width: 760px; margin: 0 auto; padding: 48px 20px 72px; }}
-  .eyebrow {{
-    color: var(--copper);
-    font-size: 0.78rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    font-weight: 700;
-    margin: 0 0 8px;
-  }}
-  h1 {{ font-size: 2.4rem; line-height: 1.05; margin: 0 0 12px; }}
-  .lede {{ color: var(--muted); margin: 0 0 28px; max-width: 62ch; }}
-  .demos {{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }}
-  .demos a {{
-    display: block;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 16px 18px 18px;
-    text-decoration: none;
-    box-shadow: 0 1px 0 rgba(28, 25, 21, 0.04);
-  }}
-  .demos a:hover {{ border-color: var(--line-strong); background: #fffaf3; }}
-  .demos a:focus-visible {{ outline: 2px solid var(--header); outline-offset: 3px; }}
-  time {{
-    display: block;
-    color: var(--copper);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }}
-  h2 {{ font-size: 1.35rem; margin: 0 0 6px; }}
-  .demos p {{ margin: 0; color: var(--muted); }}
-  .path {{
-    display: block;
-    margin-top: 10px;
-    color: var(--header);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.78rem;
-  }}
-  .empty {{ color: var(--muted); }}
-  footer {{
-    margin-top: 28px;
-    color: var(--muted);
-    font-size: 0.92rem;
-  }}
-  footer a {{ color: var(--copper); }}
-  @media (max-width: 640px) {{
-    h1 {{ font-size: 1.9rem; }}
-    .wrap {{ padding-top: 32px; }}
-  }}
-</style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%230160cb' width='32' height='32' rx='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/theme.css">
 </head>
 <body>
-<div class="wrap">
-  <p class="eyebrow">Daily demos · {html.escape(label)}</p>
-  <h1>iorek-forges-ai</h1>
+<header class="site-header">
+  <div class="site-topbar">
+    <div class="site-topbar-inner">
+      <span>Daily demos</span>
+      <nav class="site-nav" aria-label="Site">
+        <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
+      </nav>
+    </div>
+  </div>
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-name" href="./">iorek-forges-ai</a>
+      <span class="site-count">{html.escape(label)}</span>
+    </div>
+  </div>
+</header>
+<main class="page">
+  <h1>Demos you can open in the browser</h1>
   <p class="lede">{html.escape(lede)}</p>
-  <ol class="demos">
+  <ol class="demo-list">
 {cards}
   </ol>
-  <footer>
+</main>
+<footer class="site-footer">
+  <div class="site-footer-inner">
     <p>Each demo is a static folder with <code>index.html</code>. This page is generated from <code>demos/</code> when the site is built, so a new folder is listed on the next push to <code>master</code>.</p>
     <p><a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source on GitHub</a></p>
-  </footer>
-</div>
+  </div>
+</footer>
 </body>
 </html>
 """
@@ -324,11 +264,11 @@ def card_html(demo: Demo) -> str:
         when = "<time>Demo</time>"
     return (
         "    <li>\n"
-        f'      <a href="{html.escape(href, quote=True)}">\n'
+        f'      <a class="demo-card" href="{html.escape(href, quote=True)}">\n'
         f"        {when}\n"
         f"        <h2>{html.escape(demo.title)}</h2>\n"
         f"        <p>{html.escape(demo.blurb)}</p>\n"
-        f'        <span class="path">/{html.escape(href)}</span>\n'
+        f'        <span class="demo-card-path">/{html.escape(href)}</span>\n'
         "      </a>\n"
         "    </li>"
     )

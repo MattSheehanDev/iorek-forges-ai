@@ -247,7 +247,7 @@ def render_index(demos: list[Demo], lede: str) -> str:
 </main>
 <footer class="site-footer">
   <div class="site-footer-inner">
-    <p>Each demo is a static folder with <code>index.html</code>. This page is generated from <code>demos/</code> when the site is built, so a new folder is listed on the next push to <code>master</code>.</p>
+    <p>Made by Matthew Sheehan. Everything here runs right in your browser, so there's nothing to install.</p>
     <p><a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source on GitHub</a></p>
   </div>
 </footer>

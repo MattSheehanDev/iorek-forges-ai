@@ -216,31 +216,31 @@ def render_index(demos: list[Demo], lede: str) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>iorek-forges-ai</title>
+<title>Iorek Forges</title>
 <meta name="description" content="{html.escape(lede, quote=True)}">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%230160cb' width='32' height='32' rx='6'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%233b6a8f' width='32' height='32' rx='6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/theme.css">
 </head>
 <body>
 <header class="site-header">
-  <div class="site-topbar">
-    <div class="site-topbar-inner">
-      <span>Daily demos</span>
-      <nav class="site-nav" aria-label="Site">
-        <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
-      </nav>
-    </div>
-  </div>
   <div class="site-bar">
     <div class="site-bar-inner">
-      <a class="site-name" href="./">iorek-forges-ai</a>
-      <span class="site-count">{html.escape(label)}</span>
+      <a class="site-name" href="./">Iorek Forges</a>
+      <div class="site-bar-right">
+        <span class="site-count">{html.escape(label)}</span>
+        <nav class="site-nav" aria-label="Site">
+          <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
+        </nav>
+      </div>
     </div>
   </div>
 </header>
-<main class="page">
+<section class="hero">
+  <div class="kicker">Daily demos</div>
   <h1>Demos you can open in the browser</h1>
   <p class="lede">{html.escape(lede)}</p>
+</section>
+<main class="page">
   <ol class="demo-list">
 {cards}
   </ol>
@@ -250,8 +250,7 @@ def render_index(demos: list[Demo], lede: str) -> str:
     <p>Each demo is a static folder with <code>index.html</code>. This page is generated from <code>demos/</code> when the site is built, so a new folder is listed on the next push to <code>master</code>.</p>
     <p><a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source on GitHub</a></p>
   </div>
-</footer>
-</body>
+</footer>body>
 </html>
 """
 
@@ -268,7 +267,7 @@ def card_html(demo: Demo) -> str:
         f"        {when}\n"
         f"        <h2>{html.escape(demo.title)}</h2>\n"
         f"        <p>{html.escape(demo.blurb)}</p>\n"
-        f'        <span class="demo-card-path">/{html.escape(href)}</span>\n'
+        f'        <span class="demo-card-path">Open demo →</span>\n'
         "      </a>\n"
         "    </li>"
     )

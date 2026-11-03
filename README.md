@@ -1,4 +1,4 @@
-# iorek-forges-ai
+# Iorek Forges
 
 **[Live demo](https://mattsheehandev.github.io/iorek-forges-ai/)**
 

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rules after compaction · Iorek Forges</title>
+<meta name="description" content="A Northwind Logistics ops agent may email only @northwind.example. After a scripted compact, watch whether send_email CCs an outside vendor.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%233b6a8f' width='32' height='32' rx='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../../assets/theme.css">
+<style>
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 8px 24px 64px; }
+  header.top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin: 8px 0 14px; }
+  .eyebrow { color: var(--accent); font-family: var(--sans); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 6px; }
+  h1 { font-size: clamp(1.85rem, 1rem + 2.2vw, 2.4rem); line-height: 1.05; margin: 0; }
+  h2 { font-size: 1.35rem; margin: 0 0 8px; }
+  h3 { font-size: 1.12rem; margin: 0; }
+  .toy-flag { background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; max-width: 320px; font-size: 0.86rem; }
+  .toy-flag strong { color: #c5d7e6; }
+  .lede { margin: 0 0 16px; }
+  .windows { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 12px; margin: 0 0 18px; }
+  .windows article, .metric, .column, .adopt article, .ask, .shopish {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .windows article { padding: 12px 14px; }
+  .windows p { margin: 0 0 8px; color: var(--body); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: var(--sans); font-size: 12px; color: var(--body);
+    border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px 8px; background: var(--bg);
+  }
+  .chip.rule { border-color: var(--good); color: var(--good); }
+  .chip.sum { border-color: var(--accent); color: var(--accent); }
+  .chip.next { border-color: var(--ink); color: var(--ink); }
+  .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 6px; }
+  .metric { padding: 12px 14px; }
+  .metric .value { margin: 0; font-size: clamp(1.45rem, 1rem + 1.4vw, 1.85rem); line-height: 1.15; color: var(--ink); }
+  .metric .label { margin: 4px 0; font-family: var(--sans); font-size: 13px; color: var(--accent); }
+  .metric .detail, .fine, .hint { color: var(--muted); font-family: var(--sans); font-size: 0.82rem; line-height: 1.45; }
+  .metric .detail { margin: 0; }
+  .section-gap { margin-top: 22px; }
+  .ask { padding: 12px 14px; margin: 12px 0; }
+  .ask p { margin: 0; color: var(--body); }
+  .who, .call-name {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 0;
+  }
+  .transcript {
+    max-height: 320px; overflow: auto; background: #fff; border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 4px 12px; margin-top: 8px;
+  }
+  .turn { padding: 8px 0 8px 10px; border-bottom: 1px solid var(--line); border-left: 3px solid transparent; }
+  .turn p { margin: 2px 0 0; }
+  .turn.policy { border-left-color: var(--good); background: var(--bg); }
+  .toolchip { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--muted); }
+  .controls { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .actions, .toggles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .column { padding: 12px 14px 16px; min-width: 0; }
+  .column.pass { border-color: var(--good); }
+  .column.violate { border-color: var(--ink); }
+  .column.blocked { border-color: var(--accent); }
+  .column.stale { outline: 1px dashed var(--accent); }
+  .col-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; margin-bottom: 4px; }
+  .col-head p { margin: 2px 0 0; }
+  .badge {
+    flex: none; font-family: var(--sans); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    border: 1px solid var(--line-strong); border-radius: 6px; padding: 4px 8px; color: var(--muted); background: var(--bg);
+  }
+  .badge.pass { background: var(--good); border-color: var(--good); color: #fff; }
+  .badge.violate { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .badge.blocked { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .behavior { margin: 0 0 8px; font-family: var(--sans); font-size: 12.5px; color: var(--accent); min-height: 1.2em; }
+  .verdict-note { margin: 0 0 8px; color: var(--body); font-size: 0.92rem; }
+  .stale-note { margin: 0 0 8px; }
+  .context { display: flex; flex-direction: column; gap: 8px; }
+  .context-card, .pin { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; }
+  .context-card p, .pin p { margin: 2px 0 0; color: var(--body); font-size: 0.92rem; }
+  .context-card .who, .pin .who, .rule-line .who { margin-bottom: 2px; }
+  .context-card blockquote, .pin p:last-child { margin: 6px 0 0; }
+  .rule-line { margin-top: 8px; padding: 6px 8px; border-radius: 6px; background: var(--bg); }
+  .rule-line.soft { border-left: 3px solid var(--accent); }
+  .rule-line.kept { border-left: 3px solid var(--good); }
+  .rule-line.corrupt { border-left: 3px solid var(--ink); }
+  .pin { border-color: var(--accent); border-left: 3px solid var(--accent); }
+  .ask-mini { border-style: dashed; }
+  .reasoning {
+    margin: 10px 0; padding: 2px 0 2px 10px; border-left: 3px solid var(--line-strong);
+    color: var(--body); min-height: 1.2em;
+  }
+  .log { list-style: none; margin: 0; padding: 0; font-family: var(--sans); font-size: 12.5px; line-height: 1.45; }
+  .log li { padding: 8px 0 8px 10px; border-bottom: 1px solid var(--line); border-left: 3px solid var(--line); }
+  .log li.ok { border-left-color: var(--good); }
+  .log li.bad { border-left-color: var(--ink); }
+  .log li.held { border-left-color: var(--accent); }
+  .log li.wait { border-left-color: var(--line-strong); color: var(--muted); }
+  .log pre {
+    overflow: auto; margin: 6px 0; padding: 8px; background: var(--bg); border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.4;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .call-result { margin: 0; color: var(--ink); }
+  .script-note { margin: 12px 0 0; color: var(--body); }
+  .adopt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+  .adopt article { padding: 12px 14px; }
+  .adopt p { margin: 6px 0 0; color: var(--body); }
+  .adopt ol { margin: 8px 0 0; padding-left: 1.2em; color: var(--body); }
+  pre.snippet {
+    overflow: auto; margin: 8px 0 0; padding: 8px; background: var(--bg); border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45;
+  }
+  .wrap > footer { margin-top: 18px; color: var(--muted); font-family: var(--sans); font-size: 0.82rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+  @media (max-width: 900px) {
+    .windows, .metrics, .columns, .adopt { grid-template-columns: 1fr; }
+    header.top { flex-direction: column; align-items: stretch; }
+    .toy-flag { max-width: none; }
+  }
+  @media (max-width: 640px) {
+    .site-bar-inner { flex-wrap: wrap; row-gap: 8px; }
+    .site-name { white-space: nowrap; }
+    .site-nav { gap: 16px; }
+    .site-bar-right { margin-left: auto; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header demo-header">
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-name" href="../../index.html">Iorek Forges</a>
+      <div class="site-bar-right">
+        <span class="site-count">Compaction</span>
+        <nav class="site-nav" aria-label="Site">
+          <a href="../../index.html">All demos</a>
+          <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Daily demo · 4 Nov 2026</p>
+      <h1>After the history shrinks, the agent CCs the vendor</h1>
+    </div>
+    <p class="toy-flag"><strong>Scripted tool calls.</strong> No model, no network, no API key. The rates in the strip are ARCBench’s. The badges are this page’s script.</p>
+  </header>
+  <p class="lede">A long ops shift fills the context window, and the harness replaces the older turns with a short summary. The dock-window task is still in that summary. The mail rule is the part that slips, or stays in words the agent does not obey. Northwind Logistics allows <code>send_email</code> and <code>open_ticket</code>. The handbook allows recipients at <code>@northwind.example</code> only.</p>
+
+  <div class="windows">
+    <article>
+      <p class="eyebrow">Full history</p>
+      <div class="chips" aria-hidden="true">
+        <span class="chip rule">NW-MAIL-04</span>
+        <span class="chip">dock delay</span>
+        <span class="chip">reefer 34°F</span>
+        <span class="chip">BOL 90211</span>
+        <span class="chip">lane 12</span>
+        <span class="chip">Acme asked</span>
+        <span class="chip">billing</span>
+        <span class="chip">gate hours</span>
+        <span class="chip">safety</span>
+        <span class="chip next">CC the vendor</span>
+      </div>
+      <p>The rule and the shift are both still in the window when the new request arrives.</p>
+    </article>
+    <article>
+      <p class="eyebrow">After compact</p>
+      <div class="chips" aria-hidden="true">
+        <span class="chip sum">summary</span>
+        <span class="chip next">CC the vendor</span>
+      </div>
+      <p>The new request stays. The older turns, where the handbook was, become one paragraph.</p>
+    </article>
+  </div>
+
+  <section>
+    <h2>What ARCBench measured</h2>
+    <p class="hint">These rates are from the paper. This page does not measure them. violation@3 counts a case if any of three runs breaks the rule. The 2.6× figure is a different cut: the share of runs.</p>
+    <div class="metrics">
+      <article class="metric">
+        <p class="value">9.6% → 37.8%</p>
+        <p class="label">violation@3, full history to after compaction</p>
+        <p class="detail">Study S1, all four models. 8.9 points also fail with the full history. 28.9 appear only after compaction. Compacted runs still retain the rule 70.1% of the time, keep it in part 26.9%, and lose it 3.0%.</p>
+      </article>
+      <article class="metric">
+        <p class="value">2.6×</p>
+        <p class="label">retained-rule runs versus full history</p>
+        <p class="detail">21.1% of compacted runs that still contain the rule violate, against 8.1% of full-history runs. Keeping the sentence and obeying it are different events. Partial retention violates on 29.4% of those runs. Absence violates on 83.3%.</p>
+      </article>
+      <article class="metric">
+        <p class="value">91.2% kept</p>
+        <p class="label">generative summaries retain the rule</p>
+        <p class="detail">Generative strategies reach 21.8% violation@3, with the rule partial in 7.8% of runs and absent in 0.9%. Selective compactors lose the rule in 84.1% of runs and reach 50.2% violation@3. FIFO loses it in every run.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section-gap">
+    <h2>The shift</h2>
+    <p class="hint" id="turn-count">Loading the shift.</p>
+    <p class="hint">The rule is company policy in the handbook, the delivery ARCBench found held for every full-history organizational case. Personal instructions, which a later user message can be read as lifting, still failed with the full history in view: 25.0% and 16.1% violation@3.</p>
+    <div class="transcript" id="transcript" tabindex="0" aria-label="Session transcript"></div>
+    <blockquote class="ask">
+      <p class="who">Operator, after the window fills</p>
+      <p id="risky-text"></p>
+    </blockquote>
+  </section>
+
+  <section class="section-gap" aria-labelledby="paths-title">
+    <h2 id="paths-title">Three ways to carry the rule</h2>
+    <div class="controls">
+      <div class="actions">
+        <button type="button" class="btn" id="run-full">Run with full history</button>
+        <button type="button" class="btn" id="run-compact">Compact then continue</button>
+        <button type="button" class="btn" id="run-preserve">Compact + preserve rule</button>
+        <button type="button" class="btn primary" id="run-all">Run all three</button>
+        <button type="button" class="btn" id="clear-logs">Clear logs</button>
+      </div>
+      <div class="toggles">
+        <button type="button" class="btn" id="opt-retain" aria-pressed="false">Summary softens the rule</button>
+        <button type="button" class="btn" id="opt-inject" aria-pressed="false">Attack: injection off</button>
+        <button type="button" class="btn" id="opt-gate" aria-pressed="false">Tool gate off</button>
+      </div>
+      <p class="hint" id="option-hint"></p>
+    </div>
+    <p class="hint" id="status" role="status">Pick a path. Compliance is the call in the log.</p>
+    <noscript><p class="hint">Turn on JavaScript to run the three paths. The page still does not call a server.</p></noscript>
+
+    <div class="columns" id="results" aria-busy="false">
+      <section class="column" id="col-full" aria-labelledby="h-full">
+        <div class="col-head">
+          <div>
+            <h3 id="h-full">Full history</h3>
+            <p class="hint">The handbook stays in the window.</p>
+          </div>
+          <p class="badge" id="badge-full">Not run</p>
+        </div>
+        <p class="behavior" id="behavior-full"></p>
+        <p class="stale-note hint" id="stale-full" hidden>Options changed. Run this path again.</p>
+        <div class="context" id="context-full"></div>
+        <p class="reasoning" id="reason-full"></p>
+        <ol class="log" id="log-full" aria-live="polite"></ol>
+        <p class="verdict-note" id="note-full"></p>
+      </section>
+      <section class="column" id="col-compact" aria-labelledby="h-compact">
+        <div class="col-head">
+          <div>
+            <h3 id="h-compact">Generative compaction</h3>
+            <p class="hint">A model-written summary replaces the shift.</p>
+          </div>
+          <p class="badge" id="badge-compact">Not run</p>
+        </div>
+        <p class="behavior" id="behavior-compact"></p>
+        <p class="stale-note hint" id="stale-compact" hidden>Options changed. Run this path again.</p>
+        <div class="context" id="context-compact"></div>
+        <p class="reasoning" id="reason-compact"></p>
+        <ol class="log" id="log-compact" aria-live="polite"></ol>
+        <p class="verdict-note" id="note-compact"></p>
+      </section>
+      <section class="column" id="col-preserve" aria-labelledby="h-preserve">
+        <div class="col-head">
+          <div>
+            <h3 id="h-preserve">Compaction + rule preservation</h3>
+            <p class="hint">The same summary, then the handbook sentence again.</p>
+          </div>
+          <p class="badge" id="badge-preserve">Not run</p>
+        </div>
+        <p class="behavior" id="behavior-preserve"></p>
+        <p class="stale-note hint" id="stale-preserve" hidden>Options changed. Run this path again.</p>
+        <div class="context" id="context-preserve"></div>
+        <p class="reasoning" id="reason-preserve"></p>
+        <ol class="log" id="log-preserve" aria-live="polite"></ol>
+        <p class="verdict-note" id="note-preserve"></p>
+      </section>
+    </div>
+    <p class="script-note">The badges are a script, written so the failure is easy to see. It refuses on the full history and when the rule is pinned after the summary. It sends the vendor CC when the only rule text it has is the summary, including when that summary quotes the handbook. ARCBench’s models do not snap back that cleanly. Under the escape attack, rule preservation put the rule back in 99.0% of runs and brought violation@6 from 58.8% down to 29.4%, still above the 23.5% no-attack runs in that study. The tool gate is ordinary code. It reads the addresses on the call.</p>
+  </section>
+
+  <section class="section-gap">
+    <h2>What a team would change</h2>
+    <div class="adopt">
+      <article>
+        <h3>Pin it outside the summary</h3>
+        <p>Put the hard rule in a slot the compactor is not allowed to rewrite: a system block, a handbook file, or a policy tool the agent has to read again. Re-inject those same words after every compact, including a manual <code>/compact</code>. In the paper, that restore is strong on the text and partial on the behavior.</p>
+      </article>
+      <article>
+        <h3>Check it where the tool runs</h3>
+        <p>The wrapper on <code>send_email</code> looks at to, cc, and bcc. Any domain other than <code>northwind.example</code> returns an error, and nothing is sent. The attempt still counts.</p>
+        <pre class="snippet">function isInternal(email) {
+  const value = String(email).trim();
+  const at = value.lastIndexOf("@");
+  if (at &lt; 1) return false;
+  return value.slice(at + 1).toLowerCase()
+    === "northwind.example";
+}</pre>
+      </article>
+      <article>
+        <h3>Grade the call</h3>
+        <p>A dashboard that asks whether the summary still contains the sentence will miss the retained-rule failures. Log the arguments the wrapper saw. Some teams also skip the paraphrase and search the original turns when a later step needs the rule. That is a different design. ARCBench measures compaction.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="sources">
+    <h2>Inspired by</h2>
+    <ul>
+      <li>Yiwei Zha, Qingyu Meng, Herbert Bos, and Min Chen, <a href="https://arxiv.org/abs/2611.03223">Do Agents Still Follow the Rules? Benchmarking Rule Compliance under Agent Context Compaction</a> (ARCBench, 2 Nov 2026). <a href="https://arxiv.org/html/2611.03223v1">HTML</a>. Code: <a href="https://github.com/VUAISec/ARCBench">VUAISec/ARCBench</a>.</li>
+      <li>Posts that pointed at the topic: <a href="https://x.com/arkyyang/status/2117630330190635476">ARCBench explainer</a>, <a href="https://x.com/Alezander9/status/2115842962521509968">Alexander Yue on Mainplane</a>, <a href="https://x.com/pryzmat_tech/status/2117556532682375356">retained-rule runs still violate more than 2×</a>, and <a href="https://x.com/HeyDravon/status/2116923386311983344">the task survives while boundaries wander</a>.</li>
+      <li>On searching the original history instead of trusting a summary: <a href="https://alphasignal.ai/news/mainplane-gives-coding-agents-searchable-memory-to-beat-context-limits/">AlphaSignal on Mainplane</a> and <a href="https://www.maximem.ai/blog/context-compaction-vs-retrieval">context compaction vs retrieval</a>.</li>
+    </ul>
+  </section>
+  <footer>
+    <a href="../../index.html">All demos</a> · The shift, the summary, and the badges are scripted. The rates are ARCBench’s.
+  </footer>
+</div>
+<script src="demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semantic cache, tenant gate · Iorek Forges</title>
+<meta name="description" content="Northwind's support gateway reuses a cached answer when two questions look alike. Without a hard tenant filter, Acme's password reset can be served to Globex.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%233b6a8f' width='32' height='32' rx='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../../assets/theme.css">
+<style>
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 8px 24px 64px; }
+  header.top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin: 8px 0 14px; }
+  .eyebrow { color: var(--accent); font-family: var(--sans); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 6px; }
+  h1 { font-size: clamp(1.85rem, 1rem + 2.2vw, 2.4rem); line-height: 1.05; margin: 0; }
+  h2 { font-size: 1.35rem; margin: 0 0 8px; }
+  h3 { font-size: 1.12rem; margin: 0; }
+  .toy-flag { background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; max-width: 340px; font-size: 0.86rem; }
+  .toy-flag strong { color: #c5d7e6; }
+  .lede { margin: 0 0 16px; }
+  .contrast { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 18px; }
+  .contrast article, .panel, .served, .metric, .adopt article {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .contrast article, .panel { padding: 12px 14px; }
+  .contrast p, .panel p { margin: 0; color: var(--body); }
+  .panel + .panel, .stack > * + * { margin-top: 12px; }
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  label.field { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-family: var(--sans); font-size: 13px; color: var(--muted); }
+  label.field output { color: var(--ink); font-family: var(--sans); font-size: 1.35rem; }
+  textarea {
+    width: 100%; min-height: 64px; resize: vertical; font-family: var(--sans); font-size: 15px; color: var(--ink);
+    border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; padding: 8px 10px;
+  }
+  .slider-ends { display: flex; justify-content: space-between; font-family: var(--sans); font-size: 12px; color: var(--muted); margin-top: -6px; }
+  .mode-help { margin: 0; padding-left: 1.15em; color: var(--body); }
+  .mode-help li { margin: 4px 0; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .btn.tiny { padding: 4px 8px; font-size: 12px; }
+  .hint { color: var(--muted); font-family: var(--sans); font-size: 0.82rem; line-height: 1.45; margin: 0; }
+  .caller { margin: 0; color: var(--body); }
+  .section-gap { margin-top: 22px; }
+  .verdict-line { margin: 8px 0; font-size: 1.35rem; line-height: 1.25; }
+  .verdict-line.leak, .verdict-line.wrong { color: var(--ink); }
+  .verdict-line.hit { color: var(--good); }
+  .verdict-line.miss, .verdict-line.wait { color: var(--accent); }
+  .script-note { margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--card); color: var(--body); }
+  #explanation p { margin: 0 0 8px; color: var(--body); }
+  .mode-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 12px; }
+  .mode-card {
+    text-align: left; width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 12px 14px; cursor: pointer; font-family: var(--font); color: var(--ink);
+  }
+  .mode-card.hit { border-color: var(--good); }
+  .mode-card.leak, .mode-card.wrong { border-color: var(--ink); }
+  .mode-card.selected { box-shadow: inset 0 0 0 1px var(--accent); }
+  .mode-card .kicker, .kicker, .who {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  .mode-card .badge { display: inline-block; margin-top: 6px; }
+  .card-detail { margin: 6px 0 0; color: var(--body); font-family: var(--sans); font-size: 13px; }
+  .badge {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    border: 1px solid var(--line-strong); border-radius: 6px; padding: 4px 8px; color: var(--muted); background: var(--bg);
+  }
+  .badge.hit { background: var(--good); border-color: var(--good); color: #fff; }
+  .badge.leak, .badge.wrong { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .badge.miss { background: var(--card); border-color: var(--accent); color: var(--accent); }
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 8px 0; }
+  .metric { padding: 12px 14px; }
+  .metric.leak, .metric.wrong { border-color: var(--ink); }
+  .metric.hit { border-color: var(--good); }
+  .metric .value { margin: 0; font-size: clamp(1.25rem, 1rem + 1vw, 1.6rem); line-height: 1.15; color: var(--ink); }
+  .metric .label { margin: 4px 0 0; font-family: var(--sans); font-size: 13px; color: var(--accent); }
+  .served { padding: 12px 14px; margin: 8px 0 12px; }
+  .served.leak, .served.wrong { border-color: var(--ink); }
+  .served.hit { border-color: var(--good); }
+  .served blockquote, .q { margin: 6px 0 0; color: var(--ink); }
+  .answer { margin: 4px 0 0; color: var(--body); font-size: 0.95rem; }
+  .scoreline { margin: 2px 0 0; font-family: var(--sans); font-size: 12px; color: var(--muted); }
+  .neighbor, .cache-row {
+    border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: 6px;
+    padding: 8px 10px; margin: 8px 0; background: var(--card);
+  }
+  .neighbor.winner.hit { border-left-color: var(--good); }
+  .neighbor.winner.leak, .neighbor.winner.wrong { border-left-color: var(--ink); }
+  .neighbor.blocked, .cache-row.seeded { background: var(--bg); }
+  .cache-row.seeded { border-left-color: var(--accent); }
+  .row-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .chip {
+    font-family: var(--sans); font-size: 12px; color: var(--body);
+    border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 8px; background: var(--bg);
+  }
+  .chip.strong { border-color: var(--ink); color: var(--ink); }
+  .chip.acme { border-color: var(--accent); color: var(--accent); }
+  .chip.globex { border-color: var(--ink); color: var(--ink); }
+  .track { position: relative; height: 8px; background: var(--line); border-radius: 99px; margin: 8px 0 2px; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 99px; }
+  .fill.leak, .fill.wrong { background: var(--ink); }
+  .fill.hit { background: var(--good); }
+  .fill.idle { background: var(--accent); }
+  .fill.blocked { background: var(--muted); }
+  .tick { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--ink); z-index: 1; }
+  .adopt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+  .adopt article { padding: 12px 14px; }
+  .adopt p { margin: 6px 0 0; color: var(--body); }
+  pre.snippet {
+    overflow: auto; margin: 8px 0 0; padding: 8px; background: var(--bg); border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45;
+  }
+  #lesson-error { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--ink); background: var(--card); }
+  .wrap > footer { margin-top: 18px; color: var(--muted); font-family: var(--sans); font-size: 0.82rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+  @media (max-width: 900px) {
+    .contrast, .mode-cards, .metrics, .adopt { grid-template-columns: 1fr; }
+    header.top { flex-direction: column; align-items: stretch; }
+    .toy-flag { max-width: none; }
+  }
+  @media (max-width: 640px) {
+    .site-bar-inner { flex-wrap: wrap; row-gap: 8px; }
+    .site-name { white-space: nowrap; }
+    .site-nav { gap: 16px; }
+    .site-bar-right { margin-left: auto; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header demo-header">
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-name" href="../../index.html">Iorek Forges</a>
+      <div class="site-bar-right">
+        <span class="site-count">Cache</span>
+        <nav class="site-nav" aria-label="Site">
+          <a href="../../index.html">All demos</a>
+          <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Daily demo · 5 Nov 2026 · Northwind Support Gateway</p>
+      <h1>Similarity is not a tenant boundary</h1>
+    </div>
+    <p class="toy-flag"><strong>Toy embedder.</strong> Hashed words, word pairs, and character trigrams, then cosine. Not a production model. No network, no API key. The 0.88 cancel-versus-upgrade figure is from the field note in the sources. Every score below is this page’s.</p>
+  </header>
+  <p class="lede">Northwind’s support gateway sits in front of the help-desk model for two SaaS customers, Acme Corp and Globex Inc. A semantic cache reuses a stored answer when the new question is close to an old one, so a password paraphrase can skip the model. The savings are real. So is the leak, when the nearest answer belongs to the other company and names their SSO domain and account manager.</p>
+
+  <div class="contrast">
+    <article>
+      <p class="eyebrow">Global pool, or a soft prefix</p>
+      <p>The winner is whoever sits nearest in the vector. Mixing <code>tenant:globex</code> into the text nudges the vector. A long question still outvotes a short token, so Acme’s row can clear the threshold.</p>
+    </article>
+    <article>
+      <p class="eyebrow">Hard namespace</p>
+      <p>Drop every row whose tenant id is not the caller’s. Then run cosine on what remains. A closer Acme answer never enters the ranking. A high threshold is the second check, for cancel versus upgrade inside one tenant.</p>
+    </article>
+  </div>
+
+  <section class="panel" aria-labelledby="controls-title">
+    <h2 id="controls-title">Look up a question</h2>
+    <div class="controls">
+      <div>
+        <p class="hint">Calling tenant</p>
+        <div class="presets" id="tenants">
+          <button type="button" data-tenant="acme" aria-pressed="false">Acme Corp · Alice Chen</button>
+          <button type="button" data-tenant="globex" aria-pressed="true">Globex Inc · Bob Okonkwo</button>
+        </div>
+        <p class="caller" id="caller-line">Calling as Bob Okonkwo, Globex Inc, Growth tier.</p>
+      </div>
+      <label class="field" for="question">Support question</label>
+      <textarea id="question" spellcheck="true">How do I reset my password?</textarea>
+      <div>
+        <p class="hint">Try a stored question, a paraphrase, or cancel versus upgrade.</p>
+        <div class="presets" id="presets">
+          <button type="button" data-question="How do I reset my password?">Reset password</button>
+          <button type="button" data-question="I forgot my password, how do I reset it?">Forgot password</button>
+          <button type="button" data-question="How do I cancel my subscription?">Cancel</button>
+          <button type="button" data-question="How do I upgrade my subscription?">Upgrade</button>
+          <button type="button" data-question="What is our refund policy?">Refund policy</button>
+          <button type="button" data-question="Who is my account manager?">Account manager</button>
+          <button type="button" data-question="I want to change my subscription">Change plan</button>
+          <button type="button" data-question="How do I add a teammate to the workspace?">Add a teammate</button>
+          <button type="button" data-question="Where do I download the invoice for last quarter?">Invoice</button>
+        </div>
+      </div>
+      <div>
+        <label class="field" for="threshold">Cosine threshold <output id="threshold-out" for="threshold">0.85</output></label>
+        <input id="threshold" type="range" min="0.70" max="0.99" step="0.01" value="0.85" aria-describedby="pair-note">
+        <div class="slider-ends"><span>0.70 loose</span><span>0.99 strict</span></div>
+        <p class="hint" id="pair-note">Cancel versus upgrade is a known false-positive pair, reported near 0.88 cosine.</p>
+      </div>
+      <div>
+        <p class="hint">Scoping</p>
+        <div class="presets" id="modes">
+          <button type="button" data-mode="none" aria-pressed="true">None (global pool)</button>
+          <button type="button" data-mode="soft" aria-pressed="false">Soft prefix</button>
+          <button type="button" data-mode="hard" aria-pressed="false">Hard namespace</button>
+        </div>
+        <ul class="mode-help">
+          <li><strong>None.</strong> One pool. Cosine is the only key.</li>
+          <li><strong>Soft prefix.</strong> <code>tenant:acme</code> or <code>tenant:globex</code> is mixed into the text, then embedded. The other tenant’s rows still compete.</li>
+          <li><strong>Hard namespace.</strong> An exact filter on tenant id runs first. Then cosine ranks the rows that remain.</li>
+        </ul>
+      </div>
+      <div class="presets">
+        <button type="button" class="btn" id="run">Run lookup</button>
+        <button type="button" class="btn primary" id="replay">Replay leak scenario</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-gap" id="outcome" aria-labelledby="outcome-title">
+    <h2 id="outcome-title">What the lookup did</h2>
+    <p id="lesson-error" hidden></p>
+    <noscript><p class="hint">Turn on JavaScript to run the lookup. The page still does not call a server.</p></noscript>
+    <p class="script-note" id="replay-note" hidden></p>
+    <p class="verdict-line" id="verdict-line" role="status">Run a lookup.</p>
+    <p id="explanation"></p>
+    <div class="mode-cards" id="mode-cards"></div>
+    <div class="metrics" id="metrics"></div>
+    <p class="hint" id="metric-note"></p>
+    <div class="served" id="served"></div>
+    <h3>Eligible rows, nearest first</h3>
+    <p class="hint">Only the top row is served. The rest show how close a wrong answer sat. The mark on the bar is the threshold.</p>
+    <div id="neighbors"></div>
+    <div id="blocked-wrap" hidden>
+      <h3>Stopped at the tenant gate</h3>
+      <p class="hint">These rows belong to the other company. Hard mode scores them here so you can see what it refused. They did not compete.</p>
+      <div id="blocked"></div>
+    </div>
+  </section>
+
+  <section class="section-gap" aria-labelledby="cache-heading">
+    <h2 id="cache-heading">Cached questions</h2>
+    <p class="hint">The embedder reads the question only. The answer can name a person, a domain, and a contract term the question never mentioned. Globex has no cached cancel answer, which is how “cancel” can land on “upgrade.” Alice’s personalized reset is added by Replay leak scenario.</p>
+    <div id="cache-list"></div>
+  </section>
+
+  <section class="section-gap">
+    <h2>What a team would change</h2>
+    <div class="adopt">
+      <article>
+        <h3>Filter on tenant id first</h3>
+        <p>The namespace is metadata, compared exactly, before nearest-neighbor. Redis puts that filter inside the vector query. A token glued onto the sentence is a nudge, and a nudge loses to a long question. The vLLM semantic-router issue recorded the miss: a namespace token repeated three times still returned another user’s answer at similarity 0.9085 against a threshold of 0.8.</p>
+        <pre class="snippet">function eligible(entry, caller, mode) {
+  if (mode === "hard") return entry.tenant === caller;
+  return true;
+}</pre>
+      </article>
+      <article>
+        <h3>Treat the threshold as risk</h3>
+        <p>0.85 feels like a reasonable default and still serves upgrade for a cancel question when the right row was never stored. Hold the line high, tune it on real traffic, and keep a second check for intents a single word apart. Cache FAQ and docs. Leave contract terms and named people out, or key them to every identity allowed to read them.</p>
+        <pre class="snippet">function embedText(question, tenant, mode) {
+  if (mode === "soft") {
+    return "tenant:" + tenant + " " + question;
+  }
+  return question;
+}</pre>
+      </article>
+      <article>
+        <h3>Log both tenants on every hit</h3>
+        <p>Write the caller’s tenant and the winner’s tenant. Alert when they differ. A dashboard that only tracks hit rate will celebrate the leak, because the leak is a hit: 18 ms and $0 instead of the model. Authenticate and authorize before the cache lookup, so a stored answer cannot skip a policy that would block the live call.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="sources">
+    <h2>Inspired by</h2>
+    <ul>
+      <li><a href="https://x.com/PythonDvz/status/2117383241032470551">@PythonDvz</a> — prompt caching and model routing cut the bill. A semantic cache is the dangerous one: a bad cosine match can serve the wrong user’s answer.</li>
+      <li><a href="https://x.com/alexxubyte/status/2117302471156781430">@alexxubyte</a> — six cost optimizations in AI systems, including a semantic cache.</li>
+      <li><a href="https://x.com/NainaC5/status/2116787914105593902">@NainaC5</a> — GenAI system design: repeated prompts go to a semantic cache.</li>
+      <li><a href="https://x.com/akshay_pachaar/status/2113617883456766031">@akshay_pachaar</a> — four kinds of LLM caching: KV, prefix, prompt, and semantic.</li>
+      <li><a href="https://x.com/Kizuno18/status/2115442044306882981">@Kizuno18</a> — cancel versus upgrade can score about 0.88 cosine, a semantic false positive.</li>
+      <li><a href="https://redis.io/docs/latest/develop/use-cases/semantic-cache/">Redis semantic cache</a> — reuse a stored answer for a near-duplicate question, and keep tenant in a hard metadata filter beside the vector.</li>
+      <li><a href="https://github.com/vllm-project/semantic-router/issues/2134">vLLM semantic-router issue 2134</a> — soft user-scoping (a namespace token in the embedded text) returns another user’s cached answer. Tracked as CWE-524.</li>
+      <li><a href="https://www.deepinspect.ai/blog/llm-gateway-semantic-caching">DeepInspect</a> — semantic caching at the LLM gateway: what it saves, and cross-tenant hits when the key is only an embedding.</li>
+      <li><a href="https://www.truefoundry.com/blog/semantic-caching-llm-gateway">TrueFoundry</a> — semantic caching in an LLM gateway. Tenant and model stay an exact key. Cosine applies to the latest user line.</li>
+    </ul>
+  </section>
+  <footer>
+    <a href="../../index.html">All demos</a> · Acme, Globex, Alice, Bob, and the policies are fictional. The lookup is the toy embedder in <code>demo.js</code>.
+  </footer>
+</div>
+<script src="demo.js"></script>
+</body>
+</html>

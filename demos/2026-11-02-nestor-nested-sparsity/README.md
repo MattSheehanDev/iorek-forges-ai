@@ -1,6 +1,6 @@
 # Nestor: nested sparsity
 
-**[Live demo](https://iorek.mattsheehan.dev/)** · [Open this demo](https://iorek.mattsheehan.dev/demos/2026-11-02-nestor-nested-sparsity/)
+**[Live demo](https://iorekforges.mattsheehan.dev/)** · [Open this demo](https://iorekforges.mattsheehan.dev/demos/2026-11-02-nestor-nested-sparsity/)
 
 A one-block toy of [Nestor](https://ma-lab-berkeley.github.io/Nestor/) (Chu, Pai, and Ma, arXiv:2610.31818). The page uses random routers so you can see the wiring. It is not the trained model.
 

@@ -1,6 +1,6 @@
 # Iorek Forges
 
-**[Live demo](https://iorek.mattsheehan.dev/)**
+**[Live demo](https://iorekforges.mattsheehan.dev/)**
 
 Daily, self-contained demos of new AI papers and of conventions for coding agents. Each demo lives in its own folder and is meant to be opened and clicked.
 

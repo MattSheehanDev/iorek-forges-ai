@@ -1,6 +1,6 @@
 # RAG Retrieval Visualizer
 
-**[Live demo](https://iorek.mattsheehan.dev/demos/2026-10-31-rag-retrieval-visualizer/)**
+**[Live demo](https://iorekforges.mattsheehan.dev/demos/2026-10-31-rag-retrieval-visualizer/)**
 
 A browser page over a fictional dental-group handbook. It chunks the articles, scores them with BM25 and a hashed embedding, and shows which passage a help-desk question actually retrieves.
 

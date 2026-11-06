@@ -1,6 +1,6 @@
 # Semantic cache, tenant gate
 
-**[Live demo](https://iorek.mattsheehan.dev/demos/2026-11-05-semantic-cache-tenant-isolation/)**
+**[Live demo](https://iorekforges.mattsheehan.dev/demos/2026-11-05-semantic-cache-tenant-isolation/)**
 
 Northwind's support gateway reuses a cached answer when two questions look alike. Without a hard tenant filter, Acme's password reset can be served to Globex.
 

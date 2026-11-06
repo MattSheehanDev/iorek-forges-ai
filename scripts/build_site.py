@@ -62,7 +62,7 @@ def main() -> int:
     SITE.mkdir(parents=True)
     (SITE / INDEX_NAME).write_text(page, encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
-    (SITE / "CNAME").write_text("iorek.mattsheehan.dev\n", encoding="utf-8")
+    (SITE / "CNAME").write_text("iorekforges.mattsheehan.dev\n", encoding="utf-8")
     assets = ROOT / "assets"
     if assets.is_dir():
         shutil.copytree(assets, SITE / "assets")

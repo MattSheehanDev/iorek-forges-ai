@@ -1,6 +1,6 @@
 # Rules after compaction
 
-**[Live demo](https://iorek.mattsheehan.dev/demos/2026-11-04-compaction-rule-compliance/)**
+**[Live demo](https://iorekforges.mattsheehan.dev/demos/2026-11-04-compaction-rule-compliance/)**
 
 Northwind Logistics lets an ops agent send email and open tickets, and the handbook allows only `@northwind.example`. After a scripted compact, the agent CCs an outside vendor unless the rule is pinned again or the tool wrapper blocks the domain.
 

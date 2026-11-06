@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent skills, progressive disclosure · Iorek Forges</title>
+<meta name="description" content="Northwind Platform's coding agent has twelve skills installed, and a dump would paste every body on every turn. Progressive disclosure keeps the name and description in context, and opens a SKILL.md only when the request matches.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%233b6a8f' width='32' height='32' rx='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../../assets/theme.css">
+<style>
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 8px 24px 64px; }
+  header.top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin: 8px 0 14px; }
+  .eyebrow { color: var(--accent); font-family: var(--sans); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 6px; }
+  h1 { font-size: clamp(1.85rem, 1rem + 2.2vw, 2.4rem); line-height: 1.05; margin: 0; }
+  h2 { font-size: 1.35rem; margin: 0 0 8px; }
+  h3 { font-size: 1.12rem; margin: 0; }
+  .toy-flag { background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; max-width: 340px; font-size: 0.86rem; }
+  .toy-flag strong { color: #c5d7e6; }
+  .lede { margin: 0 0 16px; }
+  .contrast { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 18px; }
+  .contrast article, .panel, .budget, .skill-card, .adopt article, .folder, .callout {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+    min-width: 0; max-width: 100%;
+  }
+  .contrast article, .panel, .callout { padding: 12px 14px; }
+  .contrast p, .panel p, .callout p { margin: 0; color: var(--body); }
+  .callout { margin: 0 0 18px; }
+  .panel + .panel, .stack > * + * { margin-top: 12px; }
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  label.ask { display: block; font-family: var(--sans); font-size: 13px; color: var(--muted); margin: 0; }
+  textarea {
+    width: 100%; min-height: 72px; resize: vertical; font-family: var(--sans); font-size: 15px; color: var(--ink);
+    border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; padding: 8px 10px;
+  }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .hint { color: var(--muted); font-family: var(--sans); font-size: 0.82rem; line-height: 1.45; margin: 0; }
+  .section-gap { margin-top: 22px; }
+  .verdict-line { margin: 8px 0; font-size: 1.35rem; line-height: 1.25; }
+  #explanation p { margin: 0 0 8px; color: var(--body); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-family: var(--sans); font-size: 12px; color: var(--body); }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .swatch.l1, .seg.l1 { background: var(--muted); }
+  .swatch.l2, .seg.l2 { background: var(--accent); }
+  .swatch.l3, .seg.l3 { background: var(--ink); }
+  .budgets { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 12px; }
+  .budget { padding: 12px 14px; }
+  .budget.progressive { border-color: var(--good); }
+  .budget .kicker, .kicker, .step {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  .budget .value { margin: 4px 0 8px; font-size: clamp(1.6rem, 1rem + 1.6vw, 2.1rem); line-height: 1.1; color: var(--ink); }
+  .budget .value span { font-family: var(--sans); font-size: 0.9rem; color: var(--muted); }
+  .track { display: flex; height: 14px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 0 0 10px; }
+  .seg { display: block; height: 100%; }
+  .breakdown { list-style: none; margin: 0; padding: 0; }
+  .breakdown li {
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    padding: 4px 0; border-top: 1px solid var(--line); color: var(--body); font-family: var(--sans); font-size: 13px;
+  }
+  .breakdown .num { color: var(--ink); white-space: nowrap; }
+  .skill-card { padding: 12px 14px; margin: 10px 0; }
+  .skill-card.opened { border-color: var(--accent); }
+  .skill-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .path { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .badge {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 8px; color: var(--muted); background: var(--bg);
+  }
+  .badge.open { background: var(--good); border-color: var(--good); color: #fff; letter-spacing: 0.06em; }
+  .badge.closed { border-color: var(--line-strong); color: var(--muted); }
+  .badge.match { border-color: var(--accent); color: var(--accent); letter-spacing: 0.04em; text-transform: none; }
+  .ladder { list-style: none; margin: 8px 0; padding: 0; }
+  .rung {
+    display: grid; grid-template-columns: 5.2rem minmax(0, 1fr) auto; gap: 8px; align-items: baseline;
+    padding: 8px 0; border-top: 1px solid var(--line);
+  }
+  .rung.closed .what-title, .rung.closed .delta { color: var(--muted); }
+  .what-title { display: block; color: var(--ink); }
+  .what-detail { display: block; color: var(--muted); font-family: var(--sans); font-size: 12px; line-height: 1.4; }
+  .delta { font-family: var(--sans); font-size: 13px; color: var(--ink); white-space: nowrap; }
+  .file-label { margin: 10px 0 4px; font-family: var(--sans); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+  pre.snippet, pre.file {
+    overflow: auto; margin: 0 0 8px; padding: 8px 10px; background: var(--bg); border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45;
+    max-height: 240px; max-width: 100%; white-space: pre;
+  }
+  .folder { padding: 0; margin: 8px 0; }
+  .folder summary {
+    cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-family: var(--font); color: var(--ink);
+  }
+  .folder summary h3 { font-size: 1.05rem; }
+  .folder .inside { padding: 0 14px 12px; }
+  .blurb { margin: 0 0 8px; color: var(--body); }
+  .tree { margin: 0 0 8px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5; max-width: 100%; overflow: auto; }
+  .what, .inside, .breakdown li span:first-child { min-width: 0; }
+  .what-detail, .blurb, .breakdown li span:first-child { overflow-wrap: anywhere; }
+  .adopt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+  .adopt article { padding: 12px 14px; }
+  .adopt p { margin: 6px 0 0; color: var(--body); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .chip {
+    font-family: var(--sans); font-size: 12px; color: var(--body);
+    border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 8px; background: var(--bg);
+  }
+  #lesson-error { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--ink); background: var(--card); }
+  .wrap > footer { margin-top: 18px; color: var(--muted); font-family: var(--sans); font-size: 0.82rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+  .catalog-block { margin: 8px 0 0; }
+  .catalog-block summary { cursor: pointer; color: var(--accent); font-family: var(--sans); font-size: 13px; }
+  .catalog-line {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: baseline;
+    padding: 6px 0; border-top: 1px solid var(--line); color: var(--body); font-size: 0.92rem;
+  }
+  .catalog-line .num { font-family: var(--sans); font-size: 12px; color: var(--muted); white-space: nowrap; }
+  @media (max-width: 900px) {
+    .contrast, .budgets, .adopt { grid-template-columns: 1fr; }
+    header.top { flex-direction: column; align-items: stretch; }
+    .toy-flag { max-width: none; }
+    .rung { grid-template-columns: 1fr auto; }
+    .rung .step { grid-column: 1 / -1; }
+  }
+  @media (max-width: 640px) {
+    .site-bar-inner { flex-wrap: wrap; row-gap: 8px; }
+    .site-name { white-space: nowrap; }
+    .site-nav { gap: 16px; }
+    .site-bar-right { margin-left: auto; }
+    .wrap { padding-left: 16px; padding-right: 16px; }
+    .catalog-line { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header demo-header">
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-name" href="../../index.html">Iorek Forges</a>
+      <div class="site-bar-right">
+        <span class="site-count">Skills</span>
+        <nav class="site-nav" aria-label="Site">
+          <a href="../../index.html">All demos</a>
+          <a href="https://github.com/MattSheehanDev/iorek-forges-ai">Source</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Daily demo · 6 Nov 2026 · Northwind Platform</p>
+      <h1>Open the skill that matches</h1>
+    </div>
+    <p class="toy-flag"><strong>Toy matcher.</strong> A request opens a skill when it shares a phrase with that skill’s name or description. Not a model. Token counts are characters divided by four, rounded. Not a tokenizer. No network, no API key.</p>
+  </header>
+  <p class="lede">Northwind Platform’s coding agent has twelve team skills installed: the deploy checklist, release notes, a read-only SQL guard, invoice PDFs, postmortems, and the rest of the engineering SOPs. The Agent Skills format puts a name and a description in YAML at the top of each <code>SKILL.md</code>. Startup loads those lines. The longer body, and any script or reference next to it, stays on disk until a request matches.</p>
+
+  <div class="contrast">
+    <article>
+      <p class="eyebrow">Monolithic dump</p>
+      <p>Every turn pastes all twelve bodies, plus every script and reference. The cafeteria question costs the same as a release. The window fills with procedures nobody asked for.</p>
+    </article>
+    <article>
+      <p class="eyebrow">Progressive disclosure</p>
+      <p>Level 1 is the catalog, about a hundred tokens a skill, loaded at startup. Level 2 opens the matching <code>SKILL.md</code> body. Level 3 opens a script or a reference only when this request needs that file.</p>
+    </article>
+  </div>
+  <p class="callout">Northwind kept one platform agent. Invoices, SQL, postmortems, and the release checklist are skills on that agent. Each skill is a folder the team can review in git. A separate subagent for every SOP would multiply prompts, tools, and handoffs for work that is usually one file.</p>
+
+  <section class="panel" aria-labelledby="controls-title">
+    <h2 id="controls-title">Ask the coding agent</h2>
+    <div class="controls">
+      <label class="ask" for="request">Developer request</label>
+      <textarea id="request" spellcheck="true">cut a release and write notes</textarea>
+      <div>
+        <p class="hint">Presets a Northwind engineer might type. The last two are a request that matches nothing, and startup before any request.</p>
+        <div class="presets" id="presets">
+          <button type="button" data-request="cut a release and write notes">Cut a release and write notes</button>
+          <button type="button" data-request="draft a customer apology email">Customer apology</button>
+          <button type="button" data-request="run the SQL skill for yesterday's revenue">Yesterday’s revenue</button>
+          <button type="button" data-request="fill the Q3 invoice PDF">Q3 invoice</button>
+          <button type="button" data-request="postmortem for last night's outage">Outage postmortem</button>
+          <button type="button" data-request="review the migration pull request">Review the migration PR</button>
+          <button type="button" data-request="who owns rollback?">Who owns rollback?</button>
+          <button type="button" data-request="What's on the cafeteria menu this Friday?">Cafeteria menu</button>
+          <button type="button" data-request="">Startup catalog</button>
+        </div>
+      </div>
+      <p class="hint">The matcher reads names and descriptions only. It does not read a body until that skill is already open. Other descriptions match if you type them: on-call handoff, accessibility audit, paid ad, eval harness, add an eval, show an example of the release notes, backfill the order price book.</p>
+      <div class="presets">
+        <button type="button" class="btn primary" id="run">Show this request</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-gap" id="outcome" aria-labelledby="outcome-title">
+    <h2 id="outcome-title">What landed in context</h2>
+    <p id="lesson-error" hidden></p>
+    <noscript><p class="hint">Turn on JavaScript to run the matcher. The page still does not call a server.</p></noscript>
+    <p class="verdict-line" id="verdict-line" role="status">Counting the skills.</p>
+    <div id="explanation"></div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="swatch l1"></i> Level 1 catalog</span>
+      <span><i class="swatch l2"></i> Level 2 body</span>
+      <span><i class="swatch l3"></i> Level 3 file</span>
+    </div>
+    <div class="budgets" id="budgets"></div>
+    <p class="hint" id="meter-note"></p>
+    <h3>Skills this request opened</h3>
+    <p class="hint" id="opened-hint"></p>
+    <div id="activated"></div>
+    <div id="still-closed"></div>
+    <details class="catalog-block" id="catalog-dump">
+      <summary>Startup catalog, the Level 1 text</summary>
+      <div id="catalog-lines"></div>
+    </details>
+    <details class="catalog-block">
+      <summary>Every file the dump pastes</summary>
+      <div id="dump-lines"></div>
+    </details>
+  </section>
+
+  <section class="section-gap" aria-labelledby="rule-title">
+    <h2 id="rule-title">Judgment in markdown, precision in code</h2>
+    <p class="lede" style="font-size:1rem;max-width:70ch;">The skill body holds the decisions: when to roll back, what an apology may admit, when a review must not apply a migration. When the next step has to be exact, the body names a file. The agent runs that file, or copies it, instead of improvising SQL, shell flags, or PDF coordinates from the prose.</p>
+    <div id="rule-apply"></div>
+  </section>
+
+  <section class="section-gap" aria-labelledby="installed-title">
+    <h2 id="installed-title">Installed skills</h2>
+    <p class="hint">Twelve folders. The directory name matches the <code>name</code> in the YAML. Opening one here is for you. It does not change the token meter. The meter changes only when the request matches.</p>
+    <div id="catalog"></div>
+  </section>
+
+  <section class="section-gap">
+    <h2>What a team would change</h2>
+    <div class="adopt">
+      <article>
+        <h3>Write one skill for one workflow</h3>
+        <p>Pick a job the team already repeats: cutting a release, a postmortem, a read-only revenue question. Add a folder whose name is the YAML <code>name</code>, with <code>SKILL.md</code> at the root. The description says what it does and when to use it, in the words a teammate would type. That line is the trigger. A vague “helps with releases” matches everything or nothing.</p>
+      </article>
+      <article>
+        <h3>Put precision in scripts/</h3>
+        <p>Leave the stop rules, the tone, and the order of operations in the markdown. Put the byte-exact step in <code>scripts/</code> or the fixed skeleton in <code>references/</code>. The body points at the path. Northwind’s SQL skill is a judgment about which table is revenue, and a script that refuses writes. The apology skill has no script, because the work is the judgment.</p>
+        <pre class="snippet">function contextFor(skills, request) {
+  var catalog = skills.map(function (skill) {
+    return skill.name + ": " + skill.description;
+  });
+  var matched = skills.filter(function (skill) {
+    return matches(skill, request);
+  });
+  return catalog.concat(matched.map(function (skill) {
+    return skill.body;
+  }));
+}</pre>
+      </article>
+      <article>
+        <h3>Version the folder in git</h3>
+        <p>Review a skill change the way you review code. The same folder is the SOP for any agent that reads the Agent Skills spec. Anthropic donated that format to the Agentic AI Foundation, next to MCP, so a team is not rewriting the checklist for each product. Northwind keeps these twelve under <code>skills/</code> in the platform repo and points the agent at that directory.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="sources">
+    <h2>Inspired by</h2>
+    <ul>
+      <li><a href="https://x.com/codeswithroh/status/2118603229533819246">@codeswithroh</a> — The agent reads only the name and description until a request matches. Judgment stays in the markdown. Precision goes in code.</li>
+      <li><a href="https://x.com/prayag_dalal/status/2116016261729583538">@prayag_dalal</a> — Agent Skills are leveled. Progressive disclosure keeps a long SOP out of the prompt until it is needed.</li>
+      <li><a href="https://x.com/Android_user00/status/2114570550261563515">@Android_user00</a> — Disclosure happens in stages, and the folder name has to match the name in the YAML.</li>
+      <li><a href="https://x.com/RestrainedDepth/status/2116545376912286152">@RestrainedDepth</a> — Anthropic donated Agent Skills to the Agentic AI Foundation. The folder is a portable SOP.</li>
+      <li><a href="https://x.com/Arindam_1729/status/2114696945772249550">@Arindam_1729</a> — One agent plus skills, loaded as the request needs them, rather than a subagent for every procedure.</li>
+      <li><a href="https://agentskills.io/specification">Agent Skills specification</a> — The open spec. Metadata, then instructions, then resources, are the disclosure tiers.</li>
+      <li><a href="https://github.com/agentskills/agentskills">agentskills/agentskills</a> — The open format repository.</li>
+      <li><a href="https://www.anthropic.com/news/donating-agent-skills-to-the-agentic-ai-foundation">Anthropic, donating Agent Skills</a> — The format moves to the Agentic AI Foundation, next to MCP.</li>
+      <li><a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview">Claude, Agent Skills overview</a> — Level 1 metadata at startup, Level 2 instructions when a skill triggers, Level 3 resources as needed.</li>
+      <li><a href="https://claude.com/resources/articles/building-agents-with-skills-equipping-agents-for-specialized-work">Building agents with skills</a> — Progressive disclosure so many skills can be installed without filling the window.</li>
+    </ul>
+  </section>
+  <footer>
+    <a href="../../index.html">All demos</a> · Northwind Platform, the twelve skills, and the numbers in the scripts are fictional. The matcher and the token estimate are in <code>demo.js</code>.
+  </footer>
+</div>
+<script src="demo.js"></script>
+</body>
+</html>

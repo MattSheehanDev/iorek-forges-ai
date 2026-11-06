@@ -6,6 +6,7 @@ Daily, self-contained demos of new AI papers and of conventions for coding agent
 
 ## Demos
 
+- [2026-11-06 — Agent skills, progressive disclosure](demos/2026-11-06-agent-skills-progressive-disclosure/) — Northwind Platform's coding agent has twelve skills installed, and a dump would paste every body on every turn. Progressive disclosure keeps the name and description in context, and opens a SKILL.md only when the request matches.
 - [2026-11-05 — Semantic cache, tenant gate](demos/2026-11-05-semantic-cache-tenant-isolation/) — Northwind's support gateway reuses a cached answer when two questions look alike. Without a hard tenant filter, Acme's password reset can be served to Globex.
 - [2026-11-04 — Rules after compaction](demos/2026-11-04-compaction-rule-compliance/) — An ops agent may email only @northwind.example. After a scripted compact, it CCs an outside vendor unless the rule is pinned again.
 - [2026-11-03 — WebMCP storefront](demos/2026-11-03-webmcp-storefront/) — A shop registers catalog and cart tools on the page. One agent calls them, and a DOM scraper breaks when the classes change.

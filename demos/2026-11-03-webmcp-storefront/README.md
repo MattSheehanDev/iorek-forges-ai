@@ -1,6 +1,6 @@
 # WebMCP storefront
 
-**[Live demo](https://mattsheehandev.github.io/iorek-forges-ai/demos/2026-11-03-webmcp-storefront/)**
+**[Live demo](https://iorek.mattsheehan.dev/demos/2026-11-03-webmcp-storefront/)**
 
 Alpine Outfitters registers catalog and cart tools on the open page, and a scripted shopping agent calls them. Next to it, a DOM scraper reads CSS classes, takes more steps, and returns the wrong shoe after a layout change.
 

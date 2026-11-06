@@ -1,6 +1,6 @@
 # Structured Outputs Playground
 
-**[Live demo](https://mattsheehandev.github.io/iorek-forges-ai/demos/2026-11-01-structured-outputs-playground/)**
+**[Live demo](https://iorek.mattsheehan.dev/demos/2026-11-01-structured-outputs-playground/)**
 
 A simulated token-by-token decoder for a support ticket and a vendor invoice. A schema mask blocks illegal JSON as it is written, next to an unconstrained draft that breaks, with a validator on both.
 

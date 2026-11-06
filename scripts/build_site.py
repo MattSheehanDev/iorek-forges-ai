@@ -62,6 +62,7 @@ def main() -> int:
     SITE.mkdir(parents=True)
     (SITE / INDEX_NAME).write_text(page, encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
+    (SITE / "CNAME").write_text("iorek.mattsheehan.dev\n", encoding="utf-8")
     assets = ROOT / "assets"
     if assets.is_dir():
         shutil.copytree(assets, SITE / "assets")
@@ -155,7 +156,7 @@ def readme_title_and_lede(text: str) -> tuple[str, str]:
 
 
 def is_nav_line(paragraph: str) -> bool:
-    return "Live demo" in paragraph and "github.io" in paragraph
+    return "Live demo" in paragraph and ("github.io" in paragraph or "mattsheehan.dev" in paragraph)
 
 
 def plain(markdown: str) -> str:
